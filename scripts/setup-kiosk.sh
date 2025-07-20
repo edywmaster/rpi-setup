@@ -22,7 +22,7 @@
 set -eo pipefail  # Exit on error, pipe failures
 
 # Script configuration
-readonly SCRIPT_VERSION="1.0.1"
+readonly SCRIPT_VERSION="1.0.0"
 readonly SCRIPT_NAME="$(basename "${0:-setup-kiosk.sh}")"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || pwd)"
 readonly LOG_FILE="/var/log/kiosk-setup.log"
@@ -460,7 +460,7 @@ setup_splash_screen() {
              -gravity south \
              -pointsize 36 \
              -fill white \
-             -annotate +0+50 "v${KIOSK_VERSION}" \
+             -annotate +0+250 "v${prepare_version}" \
              "$SPLASH_VERSION" 2>/dev/null; then
         log_success "✅ Splash screen com versão criado"
     else
@@ -544,7 +544,7 @@ EOF
     log_info "📋 Splash screen configurado:"
     log_info "   • Imagem: $splash_to_use"
     log_info "   • Serviço: kiosk-splash.service"
-    log_info "   • Versão exibida: v$KIOSK_VERSION"
+    log_info "   • Versão exibida: v$prepare_version"
     log_info "   • Dispositivo: /dev/fb0"
 }
 
@@ -583,15 +583,19 @@ display_completion_summary() {
     log_success "🎉 Setup do sistema kiosk concluído com sucesso!"
     echo
     
-    # Source the configuration to display current values
-    source "$KIOSK_CONFIG_FILE"
+    # Use variables already defined in script
+    local prepare_version="1.2.0"
+    local app_mode="REDE"
+    local app_url="http://localhost:3000"
+    local app_api_url="https://app.ticketbay.com.br/api/v1"
+    local print_port="50001"
     
     log_info "📋 Resumo da instalação:"
-    log_info "   • Sistema: Kiosk v$KIOSK_VERSION"
-    log_info "   • Modo: $APP_MODE"
-    log_info "   • URL da aplicação: $APP_URL"
-    log_info "   • API URL: $APP_API_URL"
-    log_info "   • Porta de impressão: $PRINT_PORT"
+    log_info "   • Sistema: Kiosk v$prepare_version"
+    log_info "   • Modo: $app_mode"
+    log_info "   • URL da aplicação: $app_url"
+    log_info "   • API URL: $app_api_url"
+    log_info "   • Porta de impressão: $print_port"
     
     echo
     log_info "📁 Estrutura criada:"
@@ -605,7 +609,7 @@ display_completion_summary() {
     log_info "🖼️ Splash screen:"
     log_info "   • Serviço: kiosk-splash.service (habilitado)"
     log_info "   • Imagem: $SPLASH_VERSION"
-    log_info "   • Versão exibida: v$KIOSK_VERSION"
+    log_info "   • Versão exibida: v$prepare_version"
     
     echo
     log_info "📄 Arquivos importantes:"

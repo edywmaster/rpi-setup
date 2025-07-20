@@ -1327,7 +1327,8 @@ display_completion_summary() {
     # Offer kiosk system setup
     echo
     log_info "🖥️ Setup adicional disponível:"
-    log_info "ℹ️  Para configurar sistema kiosk (v$SCRIPT_VERSION compatível):"
+    log_info "ℹ️  Setup do kiosk pulado"
+    log_info "Para instalar posteriormente, execute:"
     log_info "curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/scripts/setup-kiosk.sh | sudo bash"
     
     # Mark installation as completed
