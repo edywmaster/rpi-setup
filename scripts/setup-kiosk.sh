@@ -435,14 +435,14 @@ setup_splash_screen() {
         # Create a simple splash image using convert
         convert -size 1920x1080 xc:black \
                 -fill white -gravity center \
-                -pointsize 72 -annotate +0-100 "KIOSK SYSTEM" \
+                -pointsize 72 -annotate +0-250 "KIOSK SYSTEM" \
                 -pointsize 48 -annotate +0+50 "Inicializando..." \
                 "$SPLASH_IMAGE" 2>/dev/null || {
             
             # Fallback: create with different resolution if 1920x1080 fails
             convert -size 1024x768 xc:black \
                     -fill white -gravity center \
-                    -pointsize 48 -annotate +0-50 "KIOSK SYSTEM" \
+                    -pointsize 48 -annotate +0-250 "KIOSK SYSTEM" \
                     -pointsize 32 -annotate +0+50 "Inicializando..." \
                     "$SPLASH_IMAGE" 2>/dev/null || {
                 
