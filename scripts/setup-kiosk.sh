@@ -750,6 +750,7 @@ main() {
     setup_kiosk_directories
     configure_kiosk_variables
     setup_splash_screen
+    setup_startup_service
     configure_services
     
     # Completion
