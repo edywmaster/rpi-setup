@@ -50,7 +50,7 @@ readonly SPLASH_VERSION="$KIOSK_TEMPLATES_DIR/splash_version.jpg"
 
 # Kiosk Start service configuration
 readonly KIOSK_START_SERVICE_PATH="/etc/systemd/system/kiosk-start.service"
-readonly KIOSK_START_SCRIPT="$KIOSK_SCRIPTS_DIR/kiosk-start.sh"
+readonly KIOSK_START_SCRIPT="$KIOSK_SCRIPTS_DIR/kiosk.sh"
 
 # Colors for output
 readonly RED='\033[0;31m'
@@ -619,7 +619,7 @@ display_completion_summary() {
     
     echo
     log_info "🚀 Serviço Kiosk Start:"
-    log_info "   • Serviço: kiosk-start.service (habilitado)"
+    log_info "   • Serviço: kiosk-start.service"
     log_info "   • Script: $KIOSK_START_SCRIPT"
     log_info "   • Log: /var/log/kiosk-start.log"
     log_info "   • Status: $(systemctl is-active kiosk-start.service 2>/dev/null || echo 'inativo')"
