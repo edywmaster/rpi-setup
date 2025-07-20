@@ -66,6 +66,7 @@ readonly INSTALLATION_STEPS=(
     "directory_setup"
     "configuration"
     "splash_setup"
+    "startup_service"
     "services_config"
     "kiosk_service"
     "completion"
