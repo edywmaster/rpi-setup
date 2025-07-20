@@ -309,14 +309,14 @@ setup_kiosk_directories() {
     fi
 
     # Copy splash.jpg template if it exists in the repo
-    log_info "Baixando started script..."
+    log_info "Baixando start.sh..."
     if command -v wget >/dev/null 2>&1; then
-        wget -q -O "$KIOSK_START_SCRIPT/splash.jpg" \
+        wget -q -O "$KIOSK_START_SCRIPT/start.sh" \
              "$DIST_KIOSK_DIR/scripts/start.sh" 2>/dev/null || {
             log_warn "⚠️  Não foi possível baixar start.sh, usando padrão local"
         }
     elif command -v curl >/dev/null 2>&1; then
-        curl -s -o "$KIOSK_START_SCRIPT/splash.jpg" \
+        curl -s -o "$KIOSK_START_SCRIPT/start.sh" \
              "$DIST_KIOSK_DIR/scripts/start.sh" 2>/dev/null || {
             log_warn "⚠️  Não foi possível baixar start.sh, usando padrão local"
         }
