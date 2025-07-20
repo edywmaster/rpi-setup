@@ -341,21 +341,14 @@ configure_kiosk_variables() {
 # Generated on $(date)
 
 # System Information
-KIOSK_VERSION="$KIOSK_VERSION"
+KIOSK_VERSION_CONFIG="$KIOSK_VERSION"
 KIOSK_SETUP_DATE="$(date '+%Y-%m-%d %H:%M:%S')"
 
 # Application Configuration
-APP_MODE="$APP_MODE"
-APP_URL="$APP_URL"
-APP_API_URL="$APP_API_URL"
-PRINT_PORT="$PRINT_PORT"
-
-# Directory Structure
-KIOSK_BASE_DIR="$KIOSK_BASE_DIR"
-KIOSK_SCRIPTS_DIR="$KIOSK_SCRIPTS_DIR"
-KIOSK_SERVER_DIR="$KIOSK_SERVER_DIR"
-KIOSK_UTILS_DIR="$KIOSK_UTILS_DIR"
-KIOSK_TEMPLATES_DIR="$KIOSK_TEMPLATES_DIR"
+APP_MODE_CONFIG="$APP_MODE"
+APP_URL_CONFIG="$APP_URL"
+APP_API_URL_CONFIG="$APP_API_URL"
+PRINT_PORT_CONFIG="$PRINT_PORT"
 
 # Print Server Configuration
 PRINT_SERVER_HOST="localhost"
@@ -432,8 +425,8 @@ setup_splash_screen() {
     
     log_info "Configurando splash screen customizado..."
     
-    # Source configuration
-    source "$KIOSK_CONFIG_FILE"
+    # Use variables already defined in script (no need to source config file)
+    local prepare_version="1.2.0"  # Use same version as configure_kiosk_variables
     
     # Check if base splash image exists (create a simple one if not)
     if [[ ! -f "$SPLASH_IMAGE" ]]; then
@@ -467,7 +460,7 @@ setup_splash_screen() {
              -gravity south \
              -pointsize 36 \
              -fill white \
-             -annotate +0+50 "v${KIOSK_VERSION}" \
+             -annotate +0+50 "v${prepare_version}" \
              "$SPLASH_VERSION" 2>/dev/null; then
         log_success "✅ Splash screen com versão criado"
     else
@@ -551,7 +544,7 @@ EOF
     log_info "📋 Splash screen configurado:"
     log_info "   • Imagem: $splash_to_use"
     log_info "   • Serviço: kiosk-splash.service"
-    log_info "   • Versão exibida: v$KIOSK_VERSION"
+    log_info "   • Versão exibida: v$prepare_version"
     log_info "   • Dispositivo: /dev/fb0"
 }
 
@@ -590,15 +583,19 @@ display_completion_summary() {
     log_success "🎉 Setup do sistema kiosk concluído com sucesso!"
     echo
     
-    # Source the configuration to display current values
-    source "$KIOSK_CONFIG_FILE"
+    # Use variables already defined in script
+    local prepare_version="1.2.0"
+    local app_mode="REDE"
+    local app_url="http://localhost:3000"
+    local app_api_url="https://app.ticketbay.com.br/api/v1"
+    local print_port="50001"
     
     log_info "📋 Resumo da instalação:"
-    log_info "   • Sistema: Kiosk v$KIOSK_VERSION"
-    log_info "   • Modo: $APP_MODE"
-    log_info "   • URL da aplicação: $APP_URL"
-    log_info "   • API URL: $APP_API_URL"
-    log_info "   • Porta de impressão: $PRINT_PORT"
+    log_info "   • Sistema: Kiosk v$prepare_version"
+    log_info "   • Modo: $app_mode"
+    log_info "   • URL da aplicação: $app_url"
+    log_info "   • API URL: $app_api_url"
+    log_info "   • Porta de impressão: $print_port"
     
     echo
     log_info "📁 Estrutura criada:"
@@ -612,7 +609,7 @@ display_completion_summary() {
     log_info "🖼️ Splash screen:"
     log_info "   • Serviço: kiosk-splash.service (habilitado)"
     log_info "   • Imagem: $SPLASH_VERSION"
-    log_info "   • Versão exibida: v$KIOSK_VERSION"
+    log_info "   • Versão exibida: v$prepare_version"
     
     echo
     log_info "📄 Arquivos importantes:"
