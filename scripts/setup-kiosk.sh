@@ -508,7 +508,7 @@ StandardOutput=tty
 RemainAfterExit=no
 
 [Install]
-WantedBy=sysinit.targe
+WantedBy=sysinit.target
 EOF
     
     if [[ -f "$SPLASH_SERVICE_PATH" ]]; then
@@ -578,8 +578,8 @@ setup_startup_service() {
 
     cat > "$STARTUP_SERVICE_PATH" << EOF
 [Unit]
-Description=Kiosk Auto Shell on tty1
-After=systemd-user-sessions.service plymouth-quit-wait.service kiosk-splash.service  getty.target
+Description=Kiosk Start Service
+After=systemd-user-sessions.service plymouth-quit-wait.service kiosk-splash.service getty.target
 Conflicts=getty@tty1.service
 
 [Service]
