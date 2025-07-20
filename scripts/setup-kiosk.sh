@@ -36,6 +36,9 @@ readonly KIOSK_SERVER_DIR="$KIOSK_BASE_DIR/server"
 readonly KIOSK_UTILS_DIR="$KIOSK_BASE_DIR/utils"
 readonly KIOSK_TEMPLATES_DIR="$KIOSK_BASE_DIR/templates"
 
+# Source structure for copying files
+readonly DIST_KIOSK_DIR="https://raw.githubusercontent.com/edywmaster/rpi-setup/main/dist/kiosk"
+
 # Configuration files
 readonly KIOSK_CONFIG_FILE="$KIOSK_BASE_DIR/kiosk.conf"
 readonly GLOBAL_ENV_FILE="/etc/environment"
@@ -237,27 +240,67 @@ setup_kiosk_directories() {
     
     log_info "Criando estrutura de diretórios do sistema kiosk..."
     
-    # Create base directories
+    # Create base directory first
+    if [[ ! -d "$KIOSK_BASE_DIR" ]]; then
+        if mkdir -p "$KIOSK_BASE_DIR"; then
+            log_success "✅ Diretório base criado: $KIOSK_BASE_DIR"
+        else
+            log_error "❌ Falha ao criar diretório base: $KIOSK_BASE_DIR"
+            return 1
+        fi
+    else
+        log_info "⚡ Diretório base já existe: $KIOSK_BASE_DIR"
+    fi
+    
+    # Copy structure from dist/kiosk using wget or curl
+    log_info "Copiando estrutura e arquivos do repositório..."
+    
+    # Create directories and copy templates
     local directories=(
-        "$KIOSK_BASE_DIR"
-        "$KIOSK_SCRIPTS_DIR"
-        "$KIOSK_SERVER_DIR" 
-        "$KIOSK_UTILS_DIR"
-        "$KIOSK_TEMPLATES_DIR"
+        "scripts"
+        "server" 
+        "utils"
+        "templates"
     )
     
     for dir in "${directories[@]}"; do
-        if [[ ! -d "$dir" ]]; then
-            if mkdir -p "$dir"; then
-                log_success "✅ Diretório criado: $dir"
+        local target_dir="$KIOSK_BASE_DIR/$dir"
+        
+        if [[ ! -d "$target_dir" ]]; then
+            if mkdir -p "$target_dir"; then
+                log_success "✅ Diretório criado: $target_dir"
             else
-                log_error "❌ Falha ao criar diretório: $dir"
+                log_error "❌ Falha ao criar diretório: $target_dir"
                 return 1
             fi
         else
-            log_info "⚡ Diretório já existe: $dir"
+            log_info "⚡ Diretório já existe: $target_dir"
         fi
     done
+    
+    # Copy splash.jpg template if it exists in the repo
+    log_info "Baixando template splash.jpg..."
+    if command -v wget >/dev/null 2>&1; then
+        wget -q -O "$KIOSK_TEMPLATES_DIR/splash.jpg" \
+             "$DIST_KIOSK_DIR/templates/splash.jpg" 2>/dev/null || {
+            log_warn "⚠️  Não foi possível baixar splash.jpg, usando padrão local"
+        }
+    elif command -v curl >/dev/null 2>&1; then
+        curl -s -o "$KIOSK_TEMPLATES_DIR/splash.jpg" \
+             "$DIST_KIOSK_DIR/templates/splash.jpg" 2>/dev/null || {
+            log_warn "⚠️  Não foi possível baixar splash.jpg, usando padrão local"
+        }
+    else
+        log_warn "⚠️  wget ou curl não disponível, splash.jpg será criado localmente"
+    fi
+    
+    # Verify splash.jpg exists or create a default one
+    if [[ ! -f "$KIOSK_TEMPLATES_DIR/splash.jpg" ]]; then
+        log_info "Criando splash.jpg padrão..."
+        # This will be handled later in setup_splash_screen function
+    else
+        log_success "✅ Template splash.jpg disponível"
+    fi
     
     # Set proper permissions
     log_info "Configurando permissões dos diretórios..."
