@@ -160,3 +160,36 @@ OS_VERSION=$(lsb_release -rs 2>/dev/null || echo "Unknown")
 - Move detailed technical content to `docs/development/`
 - Use `docs/production/` for operational guides
 - Test scripts go in `tests/`, utility scripts in `scripts/`
+
+## Validation Tools and Quality Assurance
+
+### Documentation Structure Validation
+
+The project includes automated tools to ensure documentation structure compliance:
+
+#### Available Validation Scripts
+
+- `tests/check-docs-reorganization.sh` - Quick visual validation of documentation structure
+- `tests/validate-docs-structure.sh` - Comprehensive validation with detailed error reporting
+- `tests/validate-copilot-integration.sh` - Validates integration of Copilot instructions
+- `tests/validate-structure.sh` - General project structure validation
+
+#### Validation Workflow
+
+1. **Before making changes**: Run `./tests/check-docs-reorganization.sh` to see current state
+2. **After making changes**: Run validation scripts to ensure compliance
+3. **Before committing**: Ensure all validation scripts pass
+
+#### Integration Requirements
+
+- All documentation changes must maintain the established structure
+- New documentation files should be placed in appropriate directories (`docs/production/` or `docs/development/`)
+- The `docs/README.md` file must be updated to reference new documentation
+- Validation scripts should be updated if new documentation patterns are introduced
+
+### Quality Standards
+
+- Documentation must be accessible from the `docs/README.md` navigation index
+- Copilot instructions must be referenced in developer workflow sections
+- All scripts in `tests/` should be executable and provide clear feedback
+- Validation tools should provide specific, actionable error messages
