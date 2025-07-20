@@ -48,6 +48,10 @@ readonly SPLASH_SERVICE_PATH="/etc/systemd/system/kiosk-splash.service"
 readonly SPLASH_IMAGE="$KIOSK_TEMPLATES_DIR/splash.jpg"
 readonly SPLASH_VERSION="$KIOSK_TEMPLATES_DIR/splash_version.jpg"
 
+# Kiosk Start service configuration
+readonly KIOSK_START_SERVICE_PATH="/etc/systemd/system/kiosk-start.service"
+readonly KIOSK_START_SCRIPT="$KIOSK_SCRIPTS_DIR/kiosk-start.sh"
+
 # Colors for output
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
@@ -63,6 +67,7 @@ readonly INSTALLATION_STEPS=(
     "configuration"
     "splash_setup"
     "services_config"
+    "kiosk_service"
     "completion"
 )
 
@@ -575,6 +580,230 @@ configure_services() {
     log_success "Configuração de serviços concluída"
 }
 
+setup_kiosk_start_service() {
+    local step="kiosk_service"
+    local last_step=$(get_last_state)
+    
+    if should_skip_step "$step" "$last_step"; then
+        log_info "⏭️  Pulando configuração do serviço Kiosk Start (já executada)"
+        return 0
+    fi
+    
+    print_header "CONFIGURANDO SERVIÇO KIOSK START"
+    save_state "$step"
+    
+    log_info "Criando script de inicialização do kiosk..."
+    
+    # Create the kiosk start script
+    cat > "$KIOSK_START_SCRIPT" << 'EOF'
+#!/bin/bash
+
+# =============================================================================
+# Kiosk Start Script
+# =============================================================================
+# Purpose: Initialize kiosk system and display status
+# This script runs when the kiosk-start service starts
+# =============================================================================
+
+# Configuration
+readonly LOG_FILE="/var/log/kiosk-start.log"
+readonly KIOSK_CONFIG="/opt/kiosk/kiosk.conf"
+
+# Colors for output
+readonly GREEN='\033[0;32m'
+readonly BLUE='\033[0;34m'
+readonly CYAN='\033[0;36m'
+readonly NC='\033[0m' # No Color
+
+log_message() {
+    local message="$1"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo "[$timestamp] $message" >> "$LOG_FILE"
+    echo -e "${CYAN}[KIOSK-START]${NC} $message"
+}
+
+main() {
+    log_message "🚀 Kiosk System Starting..."
+    
+    # Load configuration if available
+    if [[ -f "$KIOSK_CONFIG" ]]; then
+        source "$KIOSK_CONFIG"
+        log_message "✅ Configuração carregada: $KIOSK_CONFIG"
+    else
+        log_message "⚠️  Arquivo de configuração não encontrado"
+    fi
+    
+    # Display system information
+    log_message "📋 Informações do sistema:"
+    log_message "   • Hostname: $(hostname)"
+    log_message "   • Data/Hora: $(date)"
+    log_message "   • Uptime: $(uptime -p 2>/dev/null || echo 'N/A')"
+    
+    # Display kiosk information
+    if [[ -n "${KIOSK_VERSION_CONFIG:-}" ]]; then
+        log_message "   • Versão Kiosk: ${KIOSK_VERSION_CONFIG}"
+    fi
+    
+    if [[ -n "${APP_MODE_CONFIG:-}" ]]; then
+        log_message "   • Modo da aplicação: ${APP_MODE_CONFIG}"
+    fi
+    
+    if [[ -n "${PRINT_PORT_CONFIG:-}" ]]; then
+        log_message "   • Porta de impressão: ${PRINT_PORT_CONFIG}"
+    fi
+    
+    # Hello World messages for local and remote display
+    echo -e "${GREEN}============================================${NC}"
+    echo -e "${GREEN} HELLO WORLD - KIOSK SYSTEM STARTED!${NC}"
+    echo -e "${GREEN}============================================${NC}"
+    echo -e "${BLUE}Sistema Kiosk iniciado com sucesso!${NC}"
+    echo -e "${BLUE}Data/Hora: $(date)${NC}"
+    echo -e "${BLUE}Hostname: $(hostname)${NC}"
+    echo
+    
+    # Log Hello World message
+    log_message "🌍 Hello World! Kiosk system is running successfully!"
+    log_message "✅ Serviço Kiosk Start inicializado com sucesso"
+    
+    # Keep service running (for demonstration)
+    log_message "🔄 Serviço mantendo execução contínua..."
+    
+    # Simple loop to keep service alive and display periodic status
+    local counter=0
+    while true; do
+        sleep 30
+        counter=$((counter + 1))
+        
+        if [[ $((counter % 10)) -eq 0 ]]; then  # Every 5 minutes (10 * 30 seconds)
+            log_message "💓 Kiosk system heartbeat - $(date)"
+            echo -e "${CYAN}[$(date '+%H:%M:%S')]${NC} Kiosk system running - Hello World!"
+        fi
+    done
+}
+
+# Execute main function
+main "$@"
+EOF
+    
+    if [[ -f "$KIOSK_START_SCRIPT" ]]; then
+        log_success "✅ Script de inicialização criado: $KIOSK_START_SCRIPT"
+    else
+        log_error "❌ Falha ao criar script de inicialização"
+        return 1
+    fi
+    
+    # Make script executable
+    chmod +x "$KIOSK_START_SCRIPT"
+    chown pi:pi "$KIOSK_START_SCRIPT"
+    
+    # Create the systemd service
+    log_info "Criando serviço systemd kiosk-start..."
+    
+    if [[ -f "$KIOSK_START_SERVICE_PATH" ]]; then
+        log_info "⚡ Serviço kiosk-start já existe, atualizando..."
+        systemctl stop kiosk-start.service 2>/dev/null || true
+        systemctl disable kiosk-start.service 2>/dev/null || true
+    fi
+    
+    cat > "$KIOSK_START_SERVICE_PATH" << EOF
+[Unit]
+Description=Kiosk Start Service
+Documentation=Kiosk system initialization and monitoring
+After=network.target network-online.target
+Wants=network-online.target
+After=kiosk-splash.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+ExecStart=$KIOSK_START_SCRIPT
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Environment
+Environment=HOME=/home/pi
+Environment=USER=pi
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    
+    if [[ -f "$KIOSK_START_SERVICE_PATH" ]]; then
+        log_success "✅ Serviço kiosk-start criado: $KIOSK_START_SERVICE_PATH"
+    else
+        log_error "❌ Falha ao criar serviço kiosk-start"
+        return 1
+    fi
+    
+    # Enable and start the service
+    log_info "Habilitando e iniciando serviço kiosk-start..."
+    
+    if systemctl daemon-reload; then
+        log_success "✅ Systemd recarregado"
+    else
+        log_error "❌ Falha ao recarregar systemd"
+        return 1
+    fi
+    
+    if systemctl enable kiosk-start.service; then
+        log_success "✅ Serviço kiosk-start habilitado"
+    else
+        log_error "❌ Falha ao habilitar serviço kiosk-start"
+        return 1
+    fi
+    
+    # Start the service immediately for testing
+    log_info "Iniciando serviço kiosk-start para teste..."
+    if systemctl start kiosk-start.service; then
+        log_success "✅ Serviço kiosk-start iniciado"
+        
+        # Wait a moment and check status
+        sleep 2
+        
+        if systemctl is-active kiosk-start.service >/dev/null 2>&1; then
+            log_success "✅ Serviço está executando corretamente"
+            
+            # Display recent log output
+            log_info "📋 Últimas mensagens do serviço:"
+            journalctl -u kiosk-start.service --no-pager -n 5 --output=cat 2>/dev/null || true
+        else
+            log_warn "⚠️  Serviço pode não estar executando corretamente"
+        fi
+    else
+        log_error "❌ Falha ao iniciar serviço kiosk-start"
+        return 1
+    fi
+    
+    # Set proper permissions
+    chmod 644 "$KIOSK_START_SERVICE_PATH"
+    
+    log_success "Configuração do serviço Kiosk Start concluída"
+    
+    # Display service summary
+    echo
+    log_info "📋 Serviço Kiosk Start configurado:"
+    log_info "   • Script: $KIOSK_START_SCRIPT"
+    log_info "   • Serviço: kiosk-start.service"
+    log_info "   • Log: /var/log/kiosk-start.log"
+    log_info "   • Status: $(systemctl is-active kiosk-start.service 2>/dev/null || echo 'inativo')"
+    log_info "   • Usuário: pi"
+    log_info "   • Reinicialização: automática"
+    
+    echo
+    log_info "💡 Comandos úteis:"
+    log_info "   • Ver status: systemctl status kiosk-start.service"
+    log_info "   • Ver logs: journalctl -u kiosk-start.service -f"
+    log_info "   • Parar serviço: sudo systemctl stop kiosk-start.service"
+    log_info "   • Reiniciar serviço: sudo systemctl restart kiosk-start.service"
+}
+
 display_completion_summary() {
     save_state "completion"
     
@@ -610,6 +839,13 @@ display_completion_summary() {
     log_info "   • Serviço: kiosk-splash.service (habilitado)"
     log_info "   • Imagem: $SPLASH_VERSION"
     log_info "   • Versão exibida: v$prepare_version"
+    
+    echo
+    log_info "🚀 Serviço Kiosk Start:"
+    log_info "   • Serviço: kiosk-start.service (habilitado)"
+    log_info "   • Script: $KIOSK_START_SCRIPT"
+    log_info "   • Log: /var/log/kiosk-start.log"
+    log_info "   • Status: $(systemctl is-active kiosk-start.service 2>/dev/null || echo 'inativo')"
     
     echo
     log_info "📄 Arquivos importantes:"
@@ -655,6 +891,7 @@ main() {
     configure_kiosk_variables
     setup_splash_screen
     configure_services
+    setup_kiosk_start_service
     
     # Completion
     display_completion_summary

@@ -1,5 +1,73 @@
 # Release Notes
 
+## Version 1.3.0 (Kiosk Start Service Integration)
+
+### 🆕 Nova Funcionalidade Principal
+
+- **Serviço Kiosk Start**: Novo serviço systemd que inicializa automaticamente com o sistema
+- **Hello World Demo**: Script de demonstração que exibe "Hello World!" localmente e remotamente
+- **Monitoramento Contínuo**: Serviço mantém execução contínua com heartbeat a cada 5 minutos
+- **Logs Detalhados**: Sistema de logging completo em `/var/log/kiosk-start.log`
+
+### 🔧 Componentes Adicionados
+
+**Serviço systemd (`kiosk-start.service`):**
+
+- Inicialização automática após boot
+- Execução como usuário 'pi'
+- Reinicialização automática em caso de falha
+- Dependência do serviço de rede
+
+**Script de inicialização (`/opt/kiosk/scripts/kiosk-start.sh`):**
+
+- Carregamento automático de configurações
+- Exibição de informações do sistema
+- Mensagens "Hello World!" para terminal local e remoto
+- Loop contínuo com status periódico
+
+**Scripts de teste e demonstração:**
+
+- `tests/test-kiosk-start.sh` - Teste completo do serviço (10 testes automatizados)
+- `tests/demo-kiosk-hello.sh` - Demonstração local e remota do Hello World
+
+### 📁 Estrutura de Arquivos
+
+**Novo diretório dist/kiosk/:**
+
+- Template do script kiosk-start.sh
+- Estrutura base para server/, utils/, templates/
+- Documentação da estrutura
+
+### 🔄 Integração com Setup
+
+- Novo passo "kiosk_service" no processo de instalação
+- Estado persistente e recuperação automática
+- Configuração automática durante setup-kiosk.sh
+
+### 📋 Comandos Úteis
+
+```bash
+# Status do serviço
+sudo systemctl status kiosk-start.service
+
+# Logs em tempo real
+sudo journalctl -u kiosk-start.service -f
+
+# Teste local
+sudo ./tests/test-kiosk-start.sh
+
+# Demo remoto
+./tests/demo-kiosk-hello.sh 192.168.1.100
+```
+
+### 🎯 Compatibilidade
+
+- Totalmente compatível com versões anteriores
+- Funciona em conjunto com splash screen (kiosk-splash.service)
+- Integração com prepare-system.sh v1.2.0
+
+---
+
 ## Version 1.0.7 (Boot Configuration Optimization)
 
 ### 🆕 Nova Funcionalidade Principal

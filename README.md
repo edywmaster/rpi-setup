@@ -58,8 +58,23 @@ curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/scripts/s
 
 - Interface touchscreen para ReactJS
 - Servidor de impressão local (Node.js + PM2)
-- Splash screen personalizado
+- Splash screen personalizado no boot
+- **Serviço Kiosk Start**: Inicialização automática com "Hello World!" e monitoramento
 - Estrutura organizada em `/opt/kiosk/`
+- Logs detalhados e recuperação automática
+
+**Comandos úteis do Kiosk:**
+
+```bash
+# Verificar status do serviço
+sudo systemctl status kiosk-start.service
+
+# Ver logs em tempo real
+sudo journalctl -u kiosk-start.service -f
+
+# Testar funcionamento
+sudo ./tests/test-kiosk-start.sh
+```
 
 ## 🎯 Compatibilidade
 
