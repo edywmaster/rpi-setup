@@ -49,7 +49,7 @@ readonly SPLASH_IMAGE="$KIOSK_TEMPLATES_DIR/splash.jpg"
 readonly SPLASH_VERSION="$KIOSK_TEMPLATES_DIR/splash_version.jpg"
 
 # Kiosk Start service configuration
-readonly KIOSK_START_SERVICE_PATH="/etc/systemd/system/kiosk-start.service"
+readonly STARTED_SERVICE_PATH="/etc/systemd/system/kiosk-start.service"
 readonly KIOSK_START_SCRIPT="$KIOSK_SCRIPTS_DIR/kiosk.sh"
 
 # Colors for output
@@ -603,13 +603,13 @@ setup_startup_service() {
     # Create startup service
     log_info "Criando serviço de inicialização..."
 
-    if [[ -f "$STARTUP_SERVICE_PATH" ]]; then
+    if [[ -f "$STARTED_SERVICE_PATH" ]]; then
         log_info "⚡ Serviço de inicialização já existe, atualizando..."
         systemctl stop kiosk-start.service 2>/dev/null || true
         systemctl disable kiosk-start.service 2>/dev/null || true
     fi
 
-    cat > "$STARTUP_SERVICE_PATH" << EOF
+    cat > "$STARTED_SERVICE_PATH" << EOF
 [Unit]
 Description=Kiosk Start Service
 After=systemd-user-sessions.service plymouth-quit-wait.service kiosk-splash.service getty.target
@@ -630,8 +630,8 @@ WorkingDirectory=/opt/kiosk
 WantedBy=multi-user.target
 EOF
 
-    if [[ -f "$STARTUP_SERVICE_PATH" ]]; then
-        log_success "✅ Serviço de inicialização criado: $STARTUP_SERVICE_PATH"
+    if [[ -f "$STARTED_SERVICE_PATH" ]]; then
+        log_success "✅ Serviço de inicialização criado: $STARTED_SERVICE_PATH"
     else
         log_error "❌ Falha ao criar serviço de inicialização"
         return 1
@@ -658,7 +658,7 @@ EOF
     log_info "ℹ️  Serviço de inicialização configurado (será ativo no próximo boot)"
     
     # Set proper permissions
-    chmod 644 "$STARTUP_SERVICE_PATH"
+    chmod 644 "$STARTED_SERVICE_PATH"
     chown pi:pi "$KIOSK_START_SCRIPT" 2>/dev/null || true
 
     log_success "Configuração do serviço de inicialização concluída"
