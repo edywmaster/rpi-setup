@@ -5,7 +5,7 @@
 # =============================================================================
 # Purpose: Initial system update and essential package installation
 # Target: Raspberry Pi OS Lite (Debian 12 "bookworm")
-# Version: 1.0.7
+# Version: 1.0.8
 # Compatibility: Raspberry Pi 4B (portable to other models)
 # 
 # Execution methods:
@@ -46,12 +46,18 @@
 # - Automatic config.txt and cmdline.txt optimization
 # - Removes splash screens, boot logos, and verbose output
 # - Creates backup of original cmdline.txt for safety
+#
+# New feature in v1.0.8:
+# - Added automatic user autologin configuration
+# - Configures systemd getty service for seamless login
+# - Supports state tracking and recovery for autologin setup
+# - Validates user existence and service status
 # =============================================================================
 
 set -eo pipefail  # Exit on error, pipe failures
 
 # Script configuration
-readonly SCRIPT_VERSION="1.0.7"
+readonly SCRIPT_VERSION="1.0.8"
 readonly SCRIPT_NAME="$(basename "${0:-prepare-system.sh}")"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || pwd)"
 readonly LOG_FILE="/var/log/rpi-preparation.log"
@@ -61,6 +67,11 @@ readonly STATE_FILE="/var/lib/rpi-preparation-state"
 # Boot configuration files
 readonly FILE_BOOT_CONFIG="/boot/firmware/config.txt"
 readonly FILE_BOOT_CMDLINE="/boot/firmware/cmdline.txt"
+
+# Autologin configuration
+readonly AUTOLOGIN_USER="pi"
+readonly AUTOLOGIN_SERVICE_DIR="/etc/systemd/system/getty@tty1.service.d"
+readonly AUTOLOGIN_SERVICE_FILE="$AUTOLOGIN_SERVICE_DIR/override.conf"
 
 # Colors for output
 readonly RED='\033[0;31m'
@@ -100,6 +111,7 @@ readonly INSTALLATION_STEPS=(
     "locale_config"
     "package_install"
     "boot_config"
+    "autologin_config"
     "cleanup"
     "completion"
 )
@@ -238,6 +250,10 @@ check_previous_installation() {
         "boot_config")
             log_info "🔧 A instalação foi interrompida durante a configuração de boot"
             log_warn "   ⚠️  Configurações de boot podem estar incompletas"
+            ;;
+        "autologin_config")
+            log_info "👤 A instalação foi interrompida durante a configuração de autologin"
+            log_warn "   ⚠️  Configurações de autologin podem estar incompletas"
             ;;
         "cleanup")
             log_info "🧹 A instalação foi interrompida durante a limpeza do sistema"
@@ -579,6 +595,109 @@ configure_boot_settings() {
     log_success "Configurações de boot concluídas"
 }
 
+configure_autologin() {
+    local step="autologin_config"
+    local last_step=$(get_last_state)
+    
+    if should_skip_step "$step" "$last_step"; then
+        log_info "⏭️  Pulando configuração de autologin (já executada)"
+        return 0
+    fi
+    
+    print_header "CONFIGURANDO AUTOLOGIN"
+    save_state "$step"
+    
+    log_info "Configurando autologin para o usuário '$AUTOLOGIN_USER'..."
+    
+    # Verificar se o usuário existe
+    if ! id "$AUTOLOGIN_USER" >/dev/null 2>&1; then
+        log_error "Usuário '$AUTOLOGIN_USER' não encontrado no sistema"
+        log_warn "Autologin será configurado, mas pode não funcionar até que o usuário seja criado"
+    else
+        log_info "✅ Usuário '$AUTOLOGIN_USER' encontrado no sistema"
+    fi
+    
+    # Verificar se já existe configuração
+    if [[ -f "$AUTOLOGIN_SERVICE_FILE" ]]; then
+        log_info "📋 Verificando configuração existente..."
+        
+        if grep -q "autologin $AUTOLOGIN_USER" "$AUTOLOGIN_SERVICE_FILE"; then
+            log_info "⚡ Autologin já está configurado para o usuário '$AUTOLOGIN_USER'"
+            
+            # Verificar se o serviço está ativo
+            if systemctl is-active --quiet getty@tty1; then
+                log_success "✅ Serviço getty@tty1 está ativo"
+            else
+                log_warn "⚠️  Serviço getty@tty1 não está ativo, reiniciando..."
+                systemctl restart getty@tty1
+                log_success "✅ Serviço getty@tty1 reiniciado"
+            fi
+            
+            log_success "Configuração de autologin já está aplicada"
+            return 0
+        else
+            log_warn "⚠️  Configuração existente detectada, mas para usuário diferente"
+            log_info "Atualizando para o usuário '$AUTOLOGIN_USER'..."
+        fi
+    fi
+    
+    # Criar diretório se não existir
+    log_info "📁 Criando diretório de configuração..."
+    mkdir -p "$AUTOLOGIN_SERVICE_DIR"
+    
+    # Criar arquivo de configuração
+    log_info "📝 Criando arquivo de configuração do autologin..."
+    cat > "$AUTOLOGIN_SERVICE_FILE" << EOF
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin $AUTOLOGIN_USER --noclear %I \$TERM
+EOF
+    
+    if [[ -f "$AUTOLOGIN_SERVICE_FILE" ]]; then
+        log_success "✅ Arquivo de configuração criado: $AUTOLOGIN_SERVICE_FILE"
+    else
+        log_error "❌ Falha ao criar arquivo de configuração"
+        return 1
+    fi
+    
+    # Recarregar systemd
+    log_info "🔄 Recarregando configurações do systemd..."
+    if systemctl daemon-reload; then
+        log_success "✅ Systemd recarregado com sucesso"
+    else
+        log_error "❌ Falha ao recarregar systemd"
+        return 1
+    fi
+    
+    # Reiniciar serviço getty@tty1
+    log_info "🔄 Reiniciando serviço getty@tty1..."
+    if systemctl restart getty@tty1; then
+        log_success "✅ Serviço getty@tty1 reiniciado com sucesso"
+    else
+        log_error "❌ Falha ao reiniciar serviço getty@tty1"
+        return 1
+    fi
+    
+    # Verificar status do serviço
+    log_info "🔍 Verificando status do serviço..."
+    if systemctl is-active --quiet getty@tty1; then
+        log_success "✅ Serviço getty@tty1 está ativo e funcionando"
+    else
+        log_warn "⚠️  Serviço getty@tty1 pode não estar funcionando corretamente"
+        log_info "Status do serviço: $(systemctl is-active getty@tty1 2>/dev/null || echo 'unknown')"
+    fi
+    
+    # Resumo da configuração
+    echo
+    log_info "📋 Configuração de autologin aplicada:"
+    log_info "   • Usuário: $AUTOLOGIN_USER"
+    log_info "   • Arquivo: $AUTOLOGIN_SERVICE_FILE"
+    log_info "   • Serviço: getty@tty1"
+    log_info "   • Status: Ativo"
+    
+    log_success "Configuração de autologin concluída"
+}
+
 cleanup_system() {
     local step="cleanup"
     local last_step=$(get_last_state)
@@ -724,6 +843,7 @@ main() {
     configure_locales
     install_essential_packages
     configure_boot_settings
+    configure_autologin
     cleanup_system
     
     # Completion

@@ -12,13 +12,15 @@ curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/prepare-s
 
 > **🔄 Novo**: Sistema de recuperação automática - O script detecta interrupções (perda de energia, desligamentos) e permite continuar de onde parou!
 
-## 📦 O que é instalado automaticamente
+## 📦 O que é configurado automaticamente
 
 - **Sistema**: wget, curl, jq, lsof, unzip, build-essential
 - **Interface Gráfica**: xserver-xorg, xinit, openbox, chromium-browser
 - **Display**: fbi, unclutter, imagemagick, libgbm-dev
 - **Áudio**: libasound2
 - **Python**: python3-pyxdg
+- **Boot**: Configurações otimizadas para kiosk/display
+- **Login**: Autologin automático para usuário 'pi'
 
 ## 📱 Múltiplos Dispositivos
 

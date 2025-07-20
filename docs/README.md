@@ -40,6 +40,7 @@ Scripts de validação e teste do projeto:
 - **[check-docs-reorganization.sh](../tests/check-docs-reorganization.sh)** - Validação da estrutura de documentação
 - **[validate-docs-structure.sh](../tests/validate-docs-structure.sh)** - Validador completo da organização
 - **[validate-copilot-integration.sh](../tests/validate-copilot-integration.sh)** - Validação da integração das instruções do Copilot
+- **[test-autologin.sh](../tests/test-autologin.sh)** - Teste da funcionalidade de autologin
 - **[test-boot-config.sh](../tests/test-boot-config.sh)** - Teste de configurações de boot
 - **[validate-structure.sh](../tests/validate-structure.sh)** - Validação geral da estrutura
 
