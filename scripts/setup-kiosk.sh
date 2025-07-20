@@ -708,28 +708,17 @@ EOF
     cat > "$KIOSK_START_SERVICE_PATH" << EOF
 [Unit]
 Description=Kiosk Start Service
-Documentation=Kiosk system initialization and monitoring
-After=network.target network-online.target
-Wants=network-online.target
+Documentation=Kiosk system initialization
+After=getty.target
 After=kiosk-splash.service
 
 [Service]
 Type=simple
-User=pi
-Group=pi
 ExecStart=$KIOSK_START_SCRIPT
+StandardInput=tty
+StandardOutput=tty
+StandardError=tty
 Restart=always
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
-
-# Environment
-Environment=HOME=/home/pi
-Environment=USER=pi
-
-# Security settings
-NoNewPrivileges=true
-PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target
