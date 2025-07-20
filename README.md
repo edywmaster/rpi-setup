@@ -57,4 +57,4 @@ nano deploy-multiple.sh
 
 ---
 
-**Versão atual**: v1.0.2 | **Repositório**: [edywmaster/rpi-setup](https://github.com/edywmaster/rpi-setup)
+**Versão atual**: v1.0.9 | **Repositório**: [edywmaster/rpi-setup](https://github.com/edywmaster/rpi-setup)
