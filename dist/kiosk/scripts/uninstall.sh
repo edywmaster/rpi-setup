@@ -10,7 +10,8 @@
 # 
 # Usage: 
 # - Local: sudo ./uninstall.sh
-# - Remote: curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/dist/kiosk/scripts/uninstall.sh | sudo bash
+# - Local (força): sudo ./uninstall.sh --force
+# - Remote: curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/dist/kiosk/scripts/uninstall.sh | sudo bash -s -- --force
 #
 # System Cleanup:
 # - Remove kiosk directories and files
@@ -123,6 +124,26 @@ create_lock_file() {
 
 cleanup_on_exit() {
     rm -f "$LOCK_FILE"
+}
+
+# Check if running with force flag or non-interactive
+should_skip_confirmation() {
+    # Check for --force or --yes flags
+    for arg in "$@"; do
+        case "$arg" in
+            --force|--yes|-y|-f)
+                return 0  # Skip confirmation
+                ;;
+        esac
+    done
+    
+    # Check if running non-interactively (like via curl | bash)
+    if [[ ! -t 0 ]] || [[ ! -t 1 ]]; then
+        log_info "⚡ Executando em modo não-interativo, pulando confirmação"
+        return 0  # Skip confirmation
+    fi
+    
+    return 1  # Show confirmation
 }
 
 # =============================================================================
@@ -358,6 +379,12 @@ display_uninstall_summary() {
     log_info "   • Para reinstalar: execute setup-kiosk.sh novamente"
     
     echo
+    log_info "ℹ️  Opções de uso do uninstall:"
+    log_info "   • Local: sudo ./uninstall.sh"
+    log_info "   • Local (forçado): sudo ./uninstall.sh --force"
+    log_info "   • Remoto: curl -fsSL [URL] | sudo bash -s -- --force"
+    
+    echo
     log_success "🔧 Sistema limpo e pronto para nova instalação!"
 }
 
@@ -376,24 +403,28 @@ main() {
     check_root_privileges
     create_lock_file
     
-    # Confirm uninstall
-    echo
-    log_warn "⚠️  ATENÇÃO: Esta operação irá remover COMPLETAMENTE o sistema kiosk!"
-    log_info "📋 Será removido:"
-    log_info "   • Todos os diretórios em $KIOSK_BASE_DIR"
-    log_info "   • Serviços do systemd (kiosk-splash)"
-    log_info "   • Arquivos de configuração e estado"
-    log_info "   • Variáveis de ambiente relacionadas"
-    echo
-    
-    read -p "Tem certeza que deseja continuar? (Digite 'yes' para confirmar): " -r
-    if [[ ! "$REPLY" == "yes" ]]; then
-        log_info "Operação cancelada pelo usuário"
-        exit 0
+    # Confirm uninstall (unless forced or non-interactive)
+    if should_skip_confirmation "$@"; then
+        log_info "🚀 Modo automático ativado, iniciando desinstalação..."
+    else
+        echo
+        log_warn "⚠️  ATENÇÃO: Esta operação irá remover COMPLETAMENTE o sistema kiosk!"
+        log_info "📋 Será removido:"
+        log_info "   • Todos os diretórios em $KIOSK_BASE_DIR"
+        log_info "   • Serviços do systemd (kiosk-splash)"
+        log_info "   • Arquivos de configuração e estado"
+        log_info "   • Variáveis de ambiente relacionadas"
+        echo
+        
+        read -p "Tem certeza que deseja continuar? (Digite 'yes' para confirmar): " -r
+        if [[ ! "$REPLY" == "yes" ]]; then
+            log_info "Operação cancelada pelo usuário"
+            exit 0
+        fi
+        
+        echo
+        log_info "🚀 Iniciando processo de desinstalação..."
     fi
-    
-    echo
-    log_info "🚀 Iniciando processo de desinstalação..."
     
     # Uninstall process
     remove_kiosk_services
