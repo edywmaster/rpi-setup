@@ -500,15 +500,15 @@ After=local-fs.target
 Before=getty@tty1.service
 
 [Service]
-Type=oneshot
-ExecStart=/usr/bin/fbi -d /dev/fb0 --noverbose -a $splash_to_use
+Type=simple
+ExecStart=/bin/bash -c '/usr/bin/fbi -T 1 -d /dev/fb0 --noverbose -a $splash_to_use & sleep 8; killall fbi'
 ExecStop=/usr/bin/killall fbi
 StandardInput=tty
 StandardOutput=tty
-RemainAfterExit=yes
+RemainAfterExit=no
 
 [Install]
-WantedBy=sysinit.target
+WantedBy=sysinit.targe
 EOF
     
     if [[ -f "$SPLASH_SERVICE_PATH" ]]; then
