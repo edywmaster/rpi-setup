@@ -1,6 +1,59 @@
-# Release Notes - v1.0.1
+# Release Notes
 
-## 🐛 Correções de Bugs
+## 🎉 v1.0.2 - Melhorias de Performance e UX
+
+### ✨ Novas Funcionalidades
+
+**Detecção de Pacotes Duplicados:**
+
+- Verificação automática de pacotes já instalados
+- Evita reinstalações desnecessárias
+- Feedback visual aprimorado (⚡ já instalado, 📦 instalando, ✅ sucesso)
+
+**Configuração Automática de Locales:**
+
+- Correção automática de warnings de locale
+- Configuração de en_GB.UTF-8 e en_US.UTF-8
+- Eliminação de mensagens de erro relacionadas a locale
+
+**Interface Aprimorada:**
+
+- Emojis para melhor feedback visual
+- Resumo detalhado do sistema no final
+- Informações de hardware, OS, kernel e uso de disco
+- Sugestões de próximos passos
+
+### 🔧 Melhorias Técnicas
+
+**Logging Aprimorado:**
+
+- Supressão de output verboso desnecessário
+- Logs mais limpos durante instalação de pacotes
+- Melhor organização das informações
+
+**Performance:**
+
+- Operações de limpeza otimizadas (silenciosas)
+- Verificação prévia de pacotes instalados
+- Redução significativa de tempo de execução
+
+**Validação do Sistema:**
+
+- Detecção automática de necessidade de reboot
+- Informações detalhadas do sistema
+- Verificação de espaço em disco
+
+### 📊 Baseado em Feedback Real
+
+Implementado com base na execução real em Raspberry Pi 4 Model B, incluindo:
+
+- Resolução de warnings de locale
+- Otimização para pacotes já presentes no sistema
+- Melhoria da experiência do usuário
+
+---
+
+## 🐛 v1.0.1 - Correções de Bugs
 
 ### Problema: Erro ao executar via curl | bash
 

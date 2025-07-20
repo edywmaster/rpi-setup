@@ -5,12 +5,19 @@
 # =============================================================================
 # Purpose: Initial system update and essential package installation
 # Target: Raspberry Pi OS Lite (Debian 12 "bookworm")
-# Version: 1.0.1
+# Version: 1.0.2
 # Compatibility: Raspberry Pi 4B (portable to other models)
 # 
 # Execution methods:
 # - Direct: sudo ./prepare-system.sh
 # - Remote: curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/prepare-system.sh | sudo bash
+#
+# Improvements in v1.0.2:
+# - Enhanced package installation with duplicate detection
+# - Automatic locale configuration
+# - Improved visual feedback and emojis
+# - Better error handling and logging
+# - Comprehensive system summary
 # =============================================================================
 
 set -eo pipefail  # Exit on error, pipe failures
@@ -189,27 +196,42 @@ install_essential_packages() {
     print_header "INSTALANDO PACOTES ESSENCIAIS"
     
     local failed_packages=()
+    local skipped_packages=()
     local installed_count=0
     local total_packages=${#ESSENTIAL_PACKAGES[@]}
     
     log_info "Instalando $total_packages pacotes essenciais..."
     
     for package in "${ESSENTIAL_PACKAGES[@]}"; do
-        log_info "Instalando: $package"
+        log_info "Verificando: $package"
         
-        if apt-get install -y "$package"; then
-            log_success "✓ $package instalado com sucesso"
+        # Check if package is already installed
+        if dpkg -l | grep -q "^ii  $package "; then
+            log_info "⚡ $package já está instalado"
+            skipped_packages+=("$package")
+            ((installed_count++))
+            continue
+        fi
+        
+        log_info "📦 Instalando: $package"
+        
+        if apt-get install -y "$package" >/dev/null 2>&1; then
+            log_success "✅ $package instalado com sucesso"
             ((installed_count++))
         else
-            log_error "✗ Falha ao instalar $package"
+            log_error "❌ Falha ao instalar $package"
             failed_packages+=("$package")
         fi
     done
     
     # Summary
     echo
-    log_info "Resumo da instalação:"
-    log_success "Pacotes instalados: $installed_count/$total_packages"
+    log_info "📊 Resumo da instalação:"
+    log_success "Pacotes instalados/verificados: $installed_count/$total_packages"
+    
+    if [[ ${#skipped_packages[@]} -gt 0 ]]; then
+        log_info "Pacotes já instalados: ${#skipped_packages[@]} (${skipped_packages[*]})"
+    fi
     
     if [[ ${#failed_packages[@]} -gt 0 ]]; then
         log_warn "Pacotes que falharam: ${failed_packages[*]}"
@@ -221,10 +243,43 @@ cleanup_system() {
     print_header "LIMPEZA DO SISTEMA"
     
     log_info "Executando limpeza de pacotes desnecessários..."
-    apt-get autoremove -y
-    apt-get autoclean
+    apt-get autoremove -y >/dev/null 2>&1
+    apt-get autoclean >/dev/null 2>&1
     
     log_success "Limpeza concluída"
+}
+
+configure_locales() {
+    print_header "CONFIGURANDO LOCALES"
+    
+    log_info "Verificando configuração de locales..."
+    
+    # Check if locales are properly configured
+    if locale -a | grep -q "en_GB.utf8" && locale -a | grep -q "en_US.utf8"; then
+        log_success "Locales já configurados corretamente"
+        return 0
+    fi
+    
+    log_info "Configurando locales do sistema..."
+    
+    # Generate missing locales
+    if ! locale -a | grep -q "en_GB.utf8"; then
+        log_info "Gerando locale en_GB.UTF-8..."
+        sed -i 's/# en_GB.UTF-8 UTF-8/en_GB.UTF-8 UTF-8/' /etc/locale.gen
+    fi
+    
+    if ! locale -a | grep -q "en_US.utf8"; then
+        log_info "Gerando locale en_US.UTF-8..."
+        sed -i 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+    fi
+    
+    # Generate locales
+    locale-gen >/dev/null 2>&1
+    
+    # Update default locale
+    update-locale LANG=en_GB.UTF-8 LC_ALL=en_GB.UTF-8 >/dev/null 2>&1
+    
+    log_success "Locales configurados com sucesso"
 }
 
 display_completion_summary() {
@@ -241,18 +296,44 @@ display_completion_summary() {
 EOF
     echo -e "${NC}"
     
-    log_success "Preparação do sistema Raspberry Pi concluída!"
-    log_info "Logs salvos em: $LOG_FILE"
+    log_success "🎉 Preparação do sistema Raspberry Pi concluída!"
+    echo
+    log_info "📋 Informações do sistema:"
+    log_info "   • Modelo: $(cat /proc/device-tree/model 2>/dev/null | tr -d '\0')"
+    log_info "   • OS: $(lsb_release -ds 2>/dev/null)"
+    log_info "   • Kernel: $(uname -r)"
+    log_info "   • Arquitetura: $(uname -m)"
+    
+    echo
+    log_info "📁 Arquivos importantes:"
+    log_info "   • Logs completos: $LOG_FILE"
+    log_info "   • Sistema atualizado: $(date)"
+    
+    # Check disk usage
+    local disk_usage=$(df -h / | awk 'NR==2 {print $5}')
+    log_info "   • Uso do disco: $disk_usage"
     
     # Check if reboot is needed
     if [[ -f /var/run/reboot-required ]]; then
-        log_warn "Reinicialização necessária para aplicar algumas atualizações"
-        read -p "Reiniciar agora? (y/N): " -n 1 -r
+        echo
+        log_warn "⚠️  Reinicialização necessária para aplicar algumas atualizações"
+        log_info "   • Alguns pacotes exigem reinicialização"
+        log_info "   • Execute: sudo reboot"
+        
+        read -p "🔄 Reiniciar agora? (y/N): " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            log_info "Reiniciando sistema..."
+            log_info "🔄 Reiniciando sistema..."
+            sleep 2
             reboot
         fi
+    else
+        echo
+        log_success "✅ Sistema pronto para uso!"
+        log_info "🚀 Próximos passos sugeridos:"
+        log_info "   • Configurar SSH keys"
+        log_info "   • Instalar software específico"
+        log_info "   • Configurar firewall"
     fi
 }
 
@@ -263,9 +344,9 @@ EOF
 main() {
     print_header "RASPBERRY PI SYSTEM PREPARATION"
     
-    log_info "Iniciando preparação do sistema..."
-    log_info "Script: $SCRIPT_NAME"
-    log_info "Executado em: $(date)"
+    log_info "🚀 Iniciando preparação do sistema..."
+    log_info "📋 Script: $SCRIPT_NAME"
+    log_info "🕒 Executado em: $(date)"
     
     # Validations
     check_root_privileges
@@ -276,6 +357,7 @@ main() {
     # System preparation
     update_package_lists
     upgrade_system
+    configure_locales
     install_essential_packages
     cleanup_system
     
