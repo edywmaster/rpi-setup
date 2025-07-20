@@ -19,6 +19,7 @@ curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/prepare-s
 - **Display**: fbi, unclutter, imagemagick, libgbm-dev
 - **Áudio**: libasound2
 - **Python**: python3-pyxdg
+- **Node.js**: Instalação automática da versão LTS (v22.13.1) com npm e npx
 - **Boot**: Configurações otimizadas para kiosk/display
 - **Login**: Autologin automático para usuário 'pi'
 

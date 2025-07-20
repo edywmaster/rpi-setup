@@ -42,6 +42,7 @@ Scripts de validação e teste do projeto:
 - **[validate-copilot-integration.sh](../tests/validate-copilot-integration.sh)** - Validação da integração das instruções do Copilot
 - **[test-autologin.sh](../tests/test-autologin.sh)** - Teste da funcionalidade de autologin
 - **[test-boot-config.sh](../tests/test-boot-config.sh)** - Teste de configurações de boot
+- **[test-nodejs.sh](../tests/test-nodejs.sh)** - Teste da instalação do Node.js LTS
 - **[validate-structure.sh](../tests/validate-structure.sh)** - Validação geral da estrutura
 
 ## 🎯 Script Principal

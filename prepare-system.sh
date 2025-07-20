@@ -5,7 +5,7 @@
 # =============================================================================
 # Purpose: Initial system update and essential package installation
 # Target: Raspberry Pi OS Lite (Debian 12 "bookworm")
-# Version: 1.0.8
+# Version: 1.0.9
 # Compatibility: Raspberry Pi 4B (portable to other models)
 # 
 # Execution methods:
@@ -52,12 +52,19 @@
 # - Configures systemd getty service for seamless login
 # - Supports state tracking and recovery for autologin setup
 # - Validates user existence and service status
+#
+# New feature in v1.0.9:
+# - Added Node.js LTS installation with global access
+# - Automatic architecture detection (ARM64, ARMv7, x64)
+# - Configures global permissions for all users
+# - Downloads and installs latest LTS version (v22.13.1)
+# - Creates global symlinks and validates installation
 # =============================================================================
 
 set -eo pipefail  # Exit on error, pipe failures
 
 # Script configuration
-readonly SCRIPT_VERSION="1.0.8"
+readonly SCRIPT_VERSION="1.0.9"
 readonly SCRIPT_NAME="$(basename "${0:-prepare-system.sh}")"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || pwd)"
 readonly LOG_FILE="/var/log/rpi-preparation.log"
@@ -72,6 +79,11 @@ readonly FILE_BOOT_CMDLINE="/boot/firmware/cmdline.txt"
 readonly AUTOLOGIN_USER="pi"
 readonly AUTOLOGIN_SERVICE_DIR="/etc/systemd/system/getty@tty1.service.d"
 readonly AUTOLOGIN_SERVICE_FILE="$AUTOLOGIN_SERVICE_DIR/override.conf"
+
+# Node.js configuration
+readonly NODEJS_VERSION="v22.13.1"  # Latest LTS
+readonly NODEJS_INSTALL_DIR="/usr/local"
+readonly NODEJS_TEMP_DIR="/tmp/nodejs-install"
 
 # Colors for output
 readonly RED='\033[0;31m'
@@ -101,6 +113,8 @@ readonly ESSENTIAL_PACKAGES=(
     "libgbm-dev"        # Graphics buffer manager
     "libasound2"        # ALSA sound library
     "build-essential"   # Build tools
+    "xz-utils"          # XZ compression utilities (for Node.js)
+    "libssl-dev"        # SSL development libraries (for Node.js)
 )
 
 # Installation steps for state tracking
@@ -112,6 +126,7 @@ readonly INSTALLATION_STEPS=(
     "package_install"
     "boot_config"
     "autologin_config"
+    "nodejs_install"
     "cleanup"
     "completion"
 )
@@ -254,6 +269,10 @@ check_previous_installation() {
         "autologin_config")
             log_info "👤 A instalação foi interrompida durante a configuração de autologin"
             log_warn "   ⚠️  Configurações de autologin podem estar incompletas"
+            ;;
+        "nodejs_install")
+            log_info "⚙️  A instalação foi interrompida durante a instalação do Node.js"
+            log_warn "   ⚠️  Node.js pode estar parcialmente instalado"
             ;;
         "cleanup")
             log_info "🧹 A instalação foi interrompida durante a limpeza do sistema"
@@ -698,6 +717,167 @@ EOF
     log_success "Configuração de autologin concluída"
 }
 
+install_nodejs() {
+    local step="nodejs_install"
+    local last_step=$(get_last_state)
+    
+    if should_skip_step "$step" "$last_step"; then
+        log_info "⏭️  Pulando instalação do Node.js (já executada)"
+        return 0
+    fi
+    
+    print_header "INSTALANDO NODE.JS"
+    save_state "$step"
+    
+    log_info "Instalando Node.js versão $NODEJS_VERSION..."
+    
+    # Verificar se Node.js já está instalado
+    if command -v node >/dev/null 2>&1; then
+        local current_version=$(node -v 2>/dev/null || echo "unknown")
+        if [[ "$current_version" == "$NODEJS_VERSION" ]]; then
+            log_info "⚡ Node.js versão $NODEJS_VERSION já está instalado"
+            log_success "Node.js: $current_version"
+            log_success "npm: $(npm -v 2>/dev/null || echo 'não disponível')"
+            return 0
+        else
+            log_warn "⚠️  Node.js versão diferente encontrada: $current_version"
+            log_info "Atualizando para a versão $NODEJS_VERSION..."
+        fi
+    fi
+    
+    # Detectar arquitetura do sistema
+    local arch=$(uname -m)
+    local node_distro=""
+    
+    case "$arch" in
+        "aarch64"|"arm64")
+            node_distro="node-${NODEJS_VERSION}-linux-arm64"
+            log_info "✅ Arquitetura detectada: $arch (ARM64)"
+            ;;
+        "armv7l")
+            node_distro="node-${NODEJS_VERSION}-linux-armv7l"
+            log_info "✅ Arquitetura detectada: $arch (ARMv7)"
+            ;;
+        "x86_64")
+            node_distro="node-${NODEJS_VERSION}-linux-x64"
+            log_info "✅ Arquitetura detectada: $arch (x64)"
+            ;;
+        *)
+            log_error "❌ Arquitetura não suportada: $arch"
+            log_info "Arquiteturas suportadas: aarch64, armv7l, x86_64"
+            return 1
+            ;;
+    esac
+    
+    local node_url="https://nodejs.org/dist/${NODEJS_VERSION}/${node_distro}.tar.xz"
+    
+    # Criar diretório temporário
+    log_info "📁 Criando diretório temporário..."
+    rm -rf "$NODEJS_TEMP_DIR" 2>/dev/null || true
+    mkdir -p "$NODEJS_TEMP_DIR"
+    
+    # Baixar Node.js
+    log_info "📥 Baixando Node.js de $node_url..."
+    if ! curl -fL "$node_url" -o "$NODEJS_TEMP_DIR/${node_distro}.tar.xz"; then
+        log_error "❌ Falha ao baixar Node.js"
+        log_info "Verifique sua conexão com a internet e a versão especificada"
+        rm -rf "$NODEJS_TEMP_DIR"
+        return 1
+    fi
+    
+    log_success "✅ Download concluído"
+    
+    # Extrair arquivos
+    log_info "📦 Extraindo arquivos..."
+    cd "$NODEJS_TEMP_DIR"
+    
+    if ! tar -xf "${node_distro}.tar.xz"; then
+        log_error "❌ Falha ao extrair Node.js"
+        rm -rf "$NODEJS_TEMP_DIR"
+        return 1
+    fi
+    
+    log_success "✅ Extração concluída"
+    
+    # Instalar Node.js
+    log_info "🔧 Instalando Node.js em $NODEJS_INSTALL_DIR..."
+    cd "${node_distro}"
+    
+    # Backup de instalação anterior se existir
+    if [[ -d "$NODEJS_INSTALL_DIR/lib/node_modules" ]]; then
+        log_info "📋 Fazendo backup da instalação anterior..."
+        mv "$NODEJS_INSTALL_DIR/lib/node_modules" "$NODEJS_INSTALL_DIR/lib/node_modules.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+    fi
+    
+    # Copiar arquivos
+    log_info "📂 Copiando binários e bibliotecas..."
+    cp -R bin/* "$NODEJS_INSTALL_DIR/bin/" 2>/dev/null || true
+    cp -R include/* "$NODEJS_INSTALL_DIR/include/" 2>/dev/null || true
+    cp -R lib/* "$NODEJS_INSTALL_DIR/lib/" 2>/dev/null || true
+    cp -R share/* "$NODEJS_INSTALL_DIR/share/" 2>/dev/null || true
+    
+    # Configurar links simbólicos globais
+    log_info "🔗 Configurando links simbólicos globais..."
+    ln -sf "$NODEJS_INSTALL_DIR/bin/node" /usr/bin/node
+    ln -sf "$NODEJS_INSTALL_DIR/bin/npm" /usr/bin/npm
+    ln -sf "$NODEJS_INSTALL_DIR/bin/npx" /usr/bin/npx
+    
+    # Configurar permissões para todos os usuários
+    log_info "🔐 Configurando permissões para todos os usuários..."
+    chmod +x "$NODEJS_INSTALL_DIR/bin/node" 2>/dev/null || true
+    chmod +x "$NODEJS_INSTALL_DIR/bin/npm" 2>/dev/null || true
+    chmod +x "$NODEJS_INSTALL_DIR/bin/npx" 2>/dev/null || true
+    
+    # Configurar permissões do diretório npm global
+    if [[ -d "$NODEJS_INSTALL_DIR/lib/node_modules" ]]; then
+        chmod -R 755 "$NODEJS_INSTALL_DIR/lib/node_modules" 2>/dev/null || true
+    fi
+    
+    # Verificar instalação
+    log_info "🔍 Verificando instalação..."
+    
+    # Atualizar PATH para verificação
+    export PATH="$NODEJS_INSTALL_DIR/bin:/usr/bin:$PATH"
+    
+    if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
+        local installed_node_version=$(node -v 2>/dev/null)
+        local installed_npm_version=$(npm -v 2>/dev/null)
+        
+        log_success "✅ Node.js instalado com sucesso!"
+        log_info "   • Node.js: $installed_node_version"
+        log_info "   • npm: $installed_npm_version"
+        log_info "   • npx: disponível"
+        
+        # Verificar se npm funciona globalmente
+        if npm --version >/dev/null 2>&1; then
+            log_success "✅ npm configurado corretamente"
+        else
+            log_warn "⚠️  npm pode ter problemas de configuração"
+        fi
+        
+    else
+        log_error "❌ Falha na verificação da instalação"
+        log_info "Node.js pode não estar disponível no PATH"
+        rm -rf "$NODEJS_TEMP_DIR"
+        return 1
+    fi
+    
+    # Limpar arquivos temporários
+    log_info "🧹 Limpando arquivos temporários..."
+    rm -rf "$NODEJS_TEMP_DIR"
+    
+    # Resumo da instalação
+    echo
+    log_info "📋 Instalação do Node.js concluída:"
+    log_info "   • Versão: $NODEJS_VERSION"
+    log_info "   • Localização: $NODEJS_INSTALL_DIR/bin/"
+    log_info "   • Links globais: /usr/bin/node, /usr/bin/npm, /usr/bin/npx"
+    log_info "   • Permissões: Configuradas para todos os usuários"
+    log_info "   • Arquitetura: $arch ($node_distro)"
+    
+    log_success "Node.js e npm estão disponíveis globalmente"
+}
+
 cleanup_system() {
     local step="cleanup"
     local last_step=$(get_last_state)
@@ -844,6 +1024,7 @@ main() {
     install_essential_packages
     configure_boot_settings
     configure_autologin
+    install_nodejs
     cleanup_system
     
     # Completion
