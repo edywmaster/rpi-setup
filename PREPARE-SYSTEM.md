@@ -48,15 +48,73 @@ O script instala os seguintes pacotes essenciais:
 - Acesso root (sudo)
 - Conexão com internet ativa
 
-### Execução
+### Execução Direta do GitHub (Recomendado)
+
+Para executar o script diretamente do repositório em qualquer Raspberry Pi:
 
 ```bash
-# Baixar e executar diretamente
-sudo bash prepare-system.sh
+# Comando único - execução direta
+curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/prepare-system.sh | sudo bash
+```
 
-# Ou tornar executável e executar
+### Execução Local
+
+```bash
+# Baixar e verificar antes de executar
+wget https://raw.githubusercontent.com/edywmaster/rpi-setup/main/prepare-system.sh
+less prepare-system.sh  # Verificar conteúdo (opcional)
 chmod +x prepare-system.sh
 sudo ./prepare-system.sh
+
+# Ou clonar o repositório completo
+git clone https://github.com/edywmaster/rpi-setup.git
+cd rpi-setup
+sudo ./prepare-system.sh
+```
+
+### Execução em Múltiplos Dispositivos
+
+#### Via SSH (Comando Direto)
+
+```bash
+# Executar em dispositivo remoto via SSH
+ssh pi@192.168.1.100 "curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/prepare-system.sh | sudo bash"
+```
+
+#### Script de Implantação em Lote
+
+Crie um arquivo `deploy-multiple.sh`:
+
+```bash
+#!/bin/bash
+# Lista de IPs dos dispositivos Raspberry Pi
+DEVICES=(
+    "192.168.1.100"
+    "192.168.1.101"
+    "192.168.1.102"
+)
+
+SCRIPT_URL="https://raw.githubusercontent.com/edywmaster/rpi-setup/main/prepare-system.sh"
+
+for device in "${DEVICES[@]}"; do
+    echo "🔧 Configurando dispositivo: $device"
+
+    if ssh -o ConnectTimeout=5 pi@$device "echo 'Conectado'" 2>/dev/null; then
+        ssh pi@$device "curl -fsSL $SCRIPT_URL | sudo bash"
+        echo "✅ $device - Configuração concluída"
+    else
+        echo "❌ $device - Falha na conexão SSH"
+    fi
+
+    echo "----------------------------------------"
+done
+```
+
+Execute com:
+
+```bash
+chmod +x deploy-multiple.sh
+./deploy-multiple.sh
 ```
 
 ## Funcionalidades
