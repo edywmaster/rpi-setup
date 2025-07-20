@@ -1,6 +1,30 @@
 # Release Notes
 
-## 🎉 v1.0.2 - Melhorias de Performance e UX
+## Version 1.0.3 (Critical Bug Fix)
+
+### 🐛 Critical Bug Fixes
+
+- **Fixed package installation loop hanging**: The script was stopping after detecting the first installed package instead of continuing with the remaining packages
+- **Improved package detection**: Replaced `dpkg -l | grep` with more reliable `apt list --installed` method
+- **Enhanced error isolation**: Added `set +e` and `set -e` around package installation loop to prevent premature script termination
+- **Added timeout protection**: Added safety timeout for package installation operations
+
+### 🔧 Technical Improvements
+
+- Better error handling during package installation loop
+- More robust package status detection
+- Improved logging for package installation process
+- Added explicit continuation logic after package checks
+
+### 📋 Bug Details
+
+- **Issue**: Script would halt execution after printing "wget já está instalado" instead of processing all 18 packages
+- **Root Cause**: Package detection logic combined with `set -e` causing script to exit on first package check
+- **Solution**: Improved package detection method and temporary error handling suspension during installation loop
+
+---
+
+## Version 1.0.2 (Performance & UX Improvements)
 
 ### ✨ Novas Funcionalidades
 

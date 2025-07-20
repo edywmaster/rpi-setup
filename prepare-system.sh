@@ -5,7 +5,7 @@
 # =============================================================================
 # Purpose: Initial system update and essential package installation
 # Target: Raspberry Pi OS Lite (Debian 12 "bookworm")
-# Version: 1.0.2
+# Version: 1.0.3
 # Compatibility: Raspberry Pi 4B (portable to other models)
 # 
 # Execution methods:
@@ -18,6 +18,12 @@
 # - Improved visual feedback and emojis
 # - Better error handling and logging
 # - Comprehensive system summary
+#
+# Critical fix in v1.0.3:
+# - Fixed package installation loop hanging issue
+# - Improved package detection method
+# - Added timeout protection for package installation
+# - Better error isolation (set +e/-e around package installation)
 # =============================================================================
 
 set -eo pipefail  # Exit on error, pipe failures
@@ -202,11 +208,15 @@ install_essential_packages() {
     
     log_info "Instalando $total_packages pacotes essenciais..."
     
+    # Temporarily disable exit on error for package installation
+    set +e
+    
     for package in "${ESSENTIAL_PACKAGES[@]}"; do
         log_info "Verificando: $package"
         
-        # Check if package is already installed
-        if dpkg -l | grep -q "^ii  $package "; then
+        # Check if package is already installed using apt list
+        apt list --installed "$package" >/dev/null 2>&1
+        if [[ $? -eq 0 ]] && apt list --installed "$package" 2>/dev/null | grep -q "installed"; then
             log_info "⚡ $package já está instalado"
             skipped_packages+=("$package")
             ((installed_count++))
@@ -215,7 +225,8 @@ install_essential_packages() {
         
         log_info "📦 Instalando: $package"
         
-        if apt-get install -y "$package" >/dev/null 2>&1; then
+        # Install package with timeout and error handling
+        if timeout 300 apt-get install -y "$package" >/dev/null 2>&1; then
             log_success "✅ $package instalado com sucesso"
             ((installed_count++))
         else
@@ -224,19 +235,27 @@ install_essential_packages() {
         fi
     done
     
+    # Re-enable exit on error
+    set -e
+    
     # Summary
     echo
     log_info "📊 Resumo da instalação:"
     log_success "Pacotes instalados/verificados: $installed_count/$total_packages"
     
     if [[ ${#skipped_packages[@]} -gt 0 ]]; then
-        log_info "Pacotes já instalados: ${#skipped_packages[@]} (${skipped_packages[*]})"
+        log_info "Pacotes já instalados: ${#skipped_packages[@]}"
+        log_info "Lista: ${skipped_packages[*]}"
     fi
     
     if [[ ${#failed_packages[@]} -gt 0 ]]; then
-        log_warn "Pacotes que falharam: ${failed_packages[*]}"
+        log_warn "Pacotes que falharam: ${#failed_packages[@]}"
+        log_warn "Lista: ${failed_packages[*]}"
         log_info "Você pode tentar instalar manualmente: apt-get install ${failed_packages[*]}"
     fi
+    
+    # Continue execution even if some packages failed
+    log_info "Continuando com a configuração do sistema..."
 }
 
 cleanup_system() {
