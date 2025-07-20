@@ -460,7 +460,7 @@ setup_splash_screen() {
              -gravity south \
              -pointsize 36 \
              -fill white \
-             -annotate +0+250 "v${prepare_version}" \
+             -annotate +0+250 "v${KIOSK_VERSION}" \
              "$SPLASH_VERSION" 2>/dev/null; then
         log_success "✅ Splash screen com versão criado"
     else
@@ -591,7 +591,7 @@ display_completion_summary() {
     local print_port="50001"
     
     log_info "📋 Resumo da instalação:"
-    log_info "   • Sistema: Kiosk v$prepare_version"
+    log_info "   • Sistema: Kiosk v$KIOSK_VERSION"
     log_info "   • Modo: $app_mode"
     log_info "   • URL da aplicação: $app_url"
     log_info "   • API URL: $app_api_url"
