@@ -307,7 +307,39 @@ setup_kiosk_directories() {
     else
         log_success "✅ Template splash.jpg disponível"
     fi
-    
+
+    # Copy splash.jpg template if it exists in the repo
+    log_info "Baixando started script..."
+    if command -v wget >/dev/null 2>&1; then
+        wget -q -O "$KIOSK_START_SCRIPT/splash.jpg" \
+             "$DIST_KIOSK_DIR/scripts/start.sh" 2>/dev/null || {
+            log_warn "⚠️  Não foi possível baixar start.sh, usando padrão local"
+        }
+    elif command -v curl >/dev/null 2>&1; then
+        curl -s -o "$KIOSK_START_SCRIPT/splash.jpg" \
+             "$DIST_KIOSK_DIR/scripts/start.sh" 2>/dev/null || {
+            log_warn "⚠️  Não foi possível baixar start.sh, usando padrão local"
+        }
+    else
+        log_warn "⚠️  wget ou curl não disponível, start.sh será criado localmente"
+    fi
+
+    # Verify splash.jpg exists or create a default one
+    if [[ ! -f "$KIOSK_TEMPLATES_DIR/splash.jpg" ]]; then
+        log_info "Criando splash.jpg padrão..."
+        # This will be handled later in setup_splash_screen function
+    else
+        log_success "✅ Template splash.jpg disponível"
+    fi
+
+    # Verify start.sh exists or create a default one
+    if [[ ! -f "$KIOSK_START_SCRIPT/start.sh" ]]; then
+        log_info "Criando start.sh padrão..."
+        # This will be handled later in setup_start_script function
+    else
+        log_success "✅ Template start.sh disponível"
+    fi
+
     # Set proper permissions
     log_info "Configurando permissões dos diretórios..."
     chown -R pi:pi "$KIOSK_BASE_DIR" 2>/dev/null || true
