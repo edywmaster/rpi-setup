@@ -5,7 +5,7 @@
 # =============================================================================
 # Purpose: Initial system update and essential package installation
 # Target: Raspberry Pi OS Lite (Debian 12 "bookworm")
-# Version: 1.0.6
+# Version: 1.0.7
 # Compatibility: Raspberry Pi 4B (portable to other models)
 # 
 # Execution methods:
@@ -40,6 +40,12 @@
 # - Cleaned up terminal output by removing duplicate log messages with timestamps
 # - Terminal now shows only clean colored messages for better readability
 # - Complete logs with timestamps still saved to log file
+#
+# New feature in v1.0.7:
+# - Added boot configuration optimization for kiosk/display systems
+# - Automatic config.txt and cmdline.txt optimization
+# - Removes splash screens, boot logos, and verbose output
+# - Creates backup of original cmdline.txt for safety
 # =============================================================================
 
 set -eo pipefail  # Exit on error, pipe failures
@@ -50,6 +56,10 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pw
 readonly LOG_FILE="/var/log/rpi-preparation.log"
 readonly LOCK_FILE="/tmp/rpi-preparation.lock"
 readonly STATE_FILE="/var/lib/rpi-preparation-state"
+
+# Boot configuration files
+readonly FILE_BOOT_CONFIG="/boot/firmware/config.txt"
+readonly FILE_BOOT_CMDLINE="/boot/firmware/cmdline.txt"
 
 # Colors for output
 readonly RED='\033[0;31m'
@@ -88,6 +98,7 @@ readonly INSTALLATION_STEPS=(
     "system_upgrade"
     "locale_config"
     "package_install"
+    "boot_config"
     "cleanup"
     "completion"
 )
@@ -222,6 +233,10 @@ check_previous_installation() {
         "package_install")
             log_info "📦 A instalação foi interrompida durante a instalação de pacotes"
             log_warn "   ⚠️  Alguns pacotes podem estar parcialmente instalados"
+            ;;
+        "boot_config")
+            log_info "🔧 A instalação foi interrompida durante a configuração de boot"
+            log_warn "   ⚠️  Configurações de boot podem estar incompletas"
             ;;
         "cleanup")
             log_info "🧹 A instalação foi interrompida durante a limpeza do sistema"
@@ -492,6 +507,77 @@ install_essential_packages() {
     log_info "Continuando com a configuração do sistema..."
 }
 
+configure_boot_settings() {
+    local step="boot_config"
+    local last_step=$(get_last_state)
+    
+    if should_skip_step "$step" "$last_step"; then
+        log_info "⏭️  Pulando configuração de boot (já executada)"
+        return 0
+    fi
+    
+    print_header "CONFIGURANDO BOOT DO SISTEMA"
+    save_state "$step"
+    
+    log_info "Configurando arquivos de boot do Raspberry Pi..."
+    
+    # Check if boot files exist
+    if [[ ! -f "$FILE_BOOT_CONFIG" ]]; then
+        log_error "Arquivo $FILE_BOOT_CONFIG não encontrado"
+        log_warn "Pode não ser um Raspberry Pi ou sistema não suportado"
+        return 0
+    fi
+    
+    if [[ ! -f "$FILE_BOOT_CMDLINE" ]]; then
+        log_error "Arquivo $FILE_BOOT_CMDLINE não encontrado"
+        log_warn "Pode não ser um Raspberry Pi ou sistema não suportado"
+        return 0
+    fi
+    
+    # Configure config.txt
+    log_info "Configurando $FILE_BOOT_CONFIG..."
+    
+    if ! grep -q "disable_splash=1" "$FILE_BOOT_CONFIG"; then
+        log_info "Adicionando configurações de display ao config.txt..."
+        echo "" >> "$FILE_BOOT_CONFIG"
+        echo "# Raspberry Pi Display Optimizations - Added by rpi-setup" >> "$FILE_BOOT_CONFIG"
+        echo "disable_splash=1" >> "$FILE_BOOT_CONFIG"
+        echo "avoid_warnings=1" >> "$FILE_BOOT_CONFIG"
+        log_success "✅ Configurações adicionadas ao $FILE_BOOT_CONFIG"
+    else
+        log_info "⚡ Configurações já presentes no $FILE_BOOT_CONFIG"
+    fi
+    
+    # Configure cmdline.txt  
+    log_info "Configurando $FILE_BOOT_CMDLINE..."
+    
+    if ! grep -q "logo.nologo" "$FILE_BOOT_CMDLINE"; then
+        log_info "Adicionando parâmetros de boot otimizados..."
+        
+        # Create backup of cmdline.txt
+        cp "$FILE_BOOT_CMDLINE" "$FILE_BOOT_CMDLINE.backup"
+        log_info "Backup criado: $FILE_BOOT_CMDLINE.backup"
+        
+        # Add boot parameters
+        sed -i '1s/$/ logo.nologo vt.global_cursor_default=0 consoleblank=0 loglevel=0 quiet/' "$FILE_BOOT_CMDLINE"
+        log_success "✅ Configurações adicionadas ao $FILE_BOOT_CMDLINE"
+    else
+        log_info "⚡ Configurações já presentes no $FILE_BOOT_CMDLINE"
+    fi
+    
+    # Summary of changes
+    echo
+    log_info "📋 Configurações de boot aplicadas:"
+    log_info "   • disable_splash=1 - Remove tela de splash"
+    log_info "   • avoid_warnings=1 - Remove avisos de undervoltage"
+    log_info "   • logo.nologo - Remove logo do kernel"
+    log_info "   • vt.global_cursor_default=0 - Remove cursor piscando"
+    log_info "   • consoleblank=0 - Desabilita blank do console"
+    log_info "   • loglevel=0 quiet - Reduz mensagens de boot"
+    
+    log_success "Configurações de boot concluídas"
+}
+
 cleanup_system() {
     local step="cleanup"
     local last_step=$(get_last_state)
@@ -558,27 +644,16 @@ display_completion_summary() {
     
     print_header "PREPARAÇÃO CONCLUÍDA"
     
-    echo -e "${GREEN}"
-    cat << 'EOF'
-    ████████╗ ███████╗ ██████╗ ███╗   ███╗██████╗ ██╗     ███████╗████████╗ ██████╗ 
-    ██╔════╝██╔════╝██╔═══██╗████╗ ████║██╔══██╗██║     ██╔════╝╚══██╔══╝██╔═══██╗
-    ██║     ██║     ██║   ██║██╔████╔██║██████╔╝██║     █████╗     ██║   ██║   ██║
-    ██║     ██║     ██║   ██║██║╚██╔╝██║██╔═══╝ ██║     ██╔══╝     ██║   ██║   ██║
-    ╚██████╗╚██████╗╚██████╔╝██║ ╚═╝ ██║██║     ███████╗███████╗   ██║   ╚██████╔╝
-     ╚═════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚═╝     ╚══════╝╚══════╝   ╚═╝    ╚═════╝ 
-EOF
-    echo -e "${NC}"
-    
     log_success "🎉 Preparação do sistema Raspberry Pi concluída!"
     echo
-    log_info "📋 Informações do sistema:"
+    log_info "   📋 Informações do sistema:"
     log_info "   • Modelo: $(cat /proc/device-tree/model 2>/dev/null | tr -d '\0')"
     log_info "   • OS: $(lsb_release -ds 2>/dev/null)"
     log_info "   • Kernel: $(uname -r)"
     log_info "   • Arquitetura: $(uname -m)"
     
     echo
-    log_info "📁 Arquivos importantes:"
+    log_info "   📁 Arquivos importantes:"
     log_info "   • Logs completos: $LOG_FILE"
     log_info "   • Sistema atualizado: $(date)"
     
@@ -589,7 +664,7 @@ EOF
     # Check if reboot is needed
     if [[ -f /var/run/reboot-required ]]; then
         echo
-        log_warn "⚠️  Reinicialização necessária para aplicar algumas atualizações"
+        log_warn "   ⚠️  Reinicialização necessária para aplicar algumas atualizações"
         log_info "   • Alguns pacotes exigem reinicialização"
         log_info "   • Execute: sudo reboot"
         
@@ -602,11 +677,7 @@ EOF
         fi
     else
         echo
-        log_success "✅ Sistema pronto para uso!"
-        log_info "🚀 Próximos passos sugeridos:"
-        log_info "   • Configurar SSH keys"
-        log_info "   • Instalar software específico"
-        log_info "   • Configurar firewall"
+        log_success "✅ Sistema atualizado com sucesso!"
     fi
     
     # Mark installation as completed
@@ -651,6 +722,7 @@ main() {
     upgrade_system
     configure_locales
     install_essential_packages
+    configure_boot_settings
     cleanup_system
     
     # Completion

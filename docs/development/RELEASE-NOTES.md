@@ -1,5 +1,49 @@
 # Release Notes
 
+## Version 1.0.7 (Boot Configuration Optimization)
+
+### 🆕 Nova Funcionalidade Principal
+
+- **Configuração automática de boot**: Otimizações específicas para sistemas kiosk/display
+- **Supressão de elementos visuais**: Remove splash screens, logos e mensagens verbosas durante o boot
+- **Configuração segura**: Backup automático dos arquivos originais antes das modificações
+
+### 🔧 Configurações Aplicadas
+
+**Arquivo `/boot/firmware/config.txt`:**
+
+- `disable_splash=1` - Remove tela de splash do Raspberry Pi
+- `avoid_warnings=1` - Remove avisos de undervoltage durante o boot
+
+**Arquivo `/boot/firmware/cmdline.txt`:**
+
+- `logo.nologo` - Remove logo do kernel Linux
+- `vt.global_cursor_default=0` - Remove cursor piscando no console
+- `consoleblank=0` - Desabilita blank automático do console
+- `loglevel=0 quiet` - Reduz mensagens verbosas de boot
+
+### 🎯 Benefícios para Sistemas Kiosk
+
+- ✅ Boot limpo e profissional sem logos ou splash screens
+- ✅ Inicialização mais rápida com menos output visual
+- ✅ Experiência consistente para displays dedicados
+- ✅ Backup automático para reversão se necessário
+
+### 🛡️ Segurança e Validação
+
+- **Detecção de arquivos**: Verifica existência dos arquivos de boot antes de modificar
+- **Verificação de duplicatas**: Não aplica configurações se já existirem
+- **Backup automático**: Cria `cmdline.txt.backup` antes das modificações
+- **Compatibilidade**: Funciona com Raspberry Pi OS Lite (Bookworm)
+
+### 📋 Nova Etapa de Rastreamento
+
+- Adicionada etapa `boot_config` ao sistema de recuperação
+- Suporte completo à detecção de interrupções durante configuração de boot
+- Logs detalhados de todas as modificações realizadas
+
+---
+
 ## Version 1.0.6 (Clean Terminal Output)
 
 ### 🎨 UI/UX Improvement
