@@ -1,5 +1,67 @@
 # Release Notes
 
+## Version 1.0.4 (Interruption Detection & Recovery)
+
+### 🆕 Nova Funcionalidade Principal
+
+- **Sistema de Detecção de Interrupções**: O script agora detecta automaticamente quando uma instalação anterior foi interrompida
+- **Recuperação Inteligente**: Oferece opções para continuar, reiniciar ou cancelar quando uma interrupção é detectada
+- **Rastreamento de Estado**: Cada etapa da instalação é salva em arquivo de estado para permitir recuperação precisa
+
+### 🔧 Recursos de Recuperação
+
+- **Detecção Automática**: Identifica interrupções por perda de energia, desligamento acidental ou outros motivos
+- **Opções Flexíveis**:
+  - ✅ Continuar instalação (recomendado)
+  - 🆕 Reiniciar do zero
+  - ❌ Cancelar instalação
+- **Estado Detalhado**: Mostra exatamente onde a instalação foi interrompida
+- **Validação de Processo**: Verifica se outro processo de instalação está em execução
+
+### 📋 Etapas Rastreadas
+
+1. `validation` - Validações iniciais do sistema
+2. `update_lists` - Atualização das listas de pacotes
+3. `system_upgrade` - Upgrade do sistema operacional
+4. `locale_config` - Configuração de locales
+5. `package_install` - Instalação de pacotes essenciais
+6. `cleanup` - Limpeza do sistema
+7. `completion` - Finalização da instalação
+
+### 🛠️ Melhorias Técnicas
+
+- **Arquivo de Estado**: `/var/lib/rpi-preparation-state` para persistência
+- **Lock File Inteligente**: Verificação de processos órfãos
+- **Cleanup Automático**: Marcação de conclusão bem-sucedida
+- **Skip Logic**: Pula etapas já concluídas na recuperação
+
+### 🧪 Ferramentas de Teste
+
+- **Script de Teste**: `tests/test-interruption-recovery.sh`
+- **Simulação de Interrupções**: Teste todas as etapas de recuperação
+- **Validação de Estado**: Verificação do sistema de rastreamento
+
+### 📖 Como Usar
+
+Quando uma interrupção é detectada, o script exibirá:
+
+```
+⚠️  INTERRUPÇÃO DETECTADA!
+Uma instalação anterior foi interrompida:
+   • Última etapa: package_install
+   • Data/Hora: 2025-01-20 14:30:45
+   • Status: Incompleta
+
+🔧 Opções disponíveis:
+   1️⃣  Continuar instalação (recomendado)
+   2️⃣  Reiniciar do zero
+   3️⃣  Cancelar
+
+Escolha uma opção (1/2/3):
+```
+
+---
+
 ## Version 1.0.3 (Critical Bug Fix)
 
 ### 🐛 Critical Bug Fixes

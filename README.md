@@ -10,6 +10,8 @@ Execute este comando em qualquer Raspberry Pi para configuração automática:
 curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/prepare-system.sh | sudo bash
 ```
 
+> **🔄 Novo**: Sistema de recuperação automática - O script detecta interrupções (perda de energia, desligamentos) e permite continuar de onde parou!
+
 ## 📦 O que é instalado automaticamente
 
 - **Sistema**: wget, curl, jq, lsof, unzip, build-essential

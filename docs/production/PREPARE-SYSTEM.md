@@ -48,6 +48,60 @@ O script instala os seguintes pacotes essenciais:
 - Acesso root (sudo)
 - Conexão com internet ativa
 
+## 🔄 Detecção de Interrupções e Recuperação
+
+**Novo na versão 1.0.4**: O script agora possui um sistema robusto de detecção de interrupções que permite recuperação automática após falhas inesperadas.
+
+### Como Funciona
+
+O script rastreia automaticamente o progresso da instalação em 7 etapas:
+
+1. **Validação** - Verificações iniciais do sistema
+2. **Atualização de Listas** - `apt update`
+3. **Upgrade do Sistema** - `apt upgrade`
+4. **Configuração de Locales** - Configuração de idioma
+5. **Instalação de Pacotes** - Instalação dos 18 pacotes essenciais
+6. **Limpeza** - Remoção de pacotes desnecessários
+7. **Finalização** - Exibição do sumário final
+
+### Cenários de Interrupção
+
+O sistema detecta automaticamente interrupções causadas por:
+
+- 🔌 **Perda de energia** - Queda de energia durante a instalação
+- 🔄 **Desligamento acidental** - Reinicialização inesperada do sistema
+- ❌ **Falhas de rede** - Perda de conectividade durante download
+- ⚠️ **Erros críticos** - Falhas que interrompem o processo
+
+### Interface de Recuperação
+
+Quando uma interrupção é detectada, o script exibe:
+
+```
+⚠️  INTERRUPÇÃO DETECTADA!
+Uma instalação anterior foi interrompida:
+   • Última etapa: package_install
+   • Data/Hora: 2025-01-20 14:30:45
+   • Status: Incompleta
+
+📦 A instalação foi interrompida durante a instalação de pacotes
+   ⚠️  Alguns pacotes podem estar parcialmente instalados
+
+🔧 Opções disponíveis:
+   1️⃣  Continuar instalação (recomendado)
+   2️⃣  Reiniciar do zero
+   3️⃣  Cancelar
+
+Escolha uma opção (1/2/3):
+```
+
+### Benefícios da Recuperação
+
+- ⚡ **Economia de Tempo**: Evita refazer etapas já concluídas
+- 🛡️ **Segurança**: Evita corrupção por reinstalações desnecessárias
+- 📊 **Transparência**: Mostra exatamente onde parou
+- 🎯 **Flexibilidade**: Permite escolher entre continuar ou reiniciar
+
 ### Execução Direta do GitHub (Recomendado)
 
 Para executar o script diretamente do repositório em qualquer Raspberry Pi:
@@ -162,7 +216,22 @@ chmod +x deploy-multiple.sh
 
 ## Logs e Debugging
 
-### Arquivo de Log
+### Arquivos do Sistema
+
+O script mantém controle através de arquivos específicos:
+
+```bash
+# Log principal - todas as operações
+/var/log/rpi-preparation.log
+
+# Estado da instalação - para recuperação
+/var/lib/rpi-preparation-state
+
+# Lock file - previne execuções simultâneas
+/tmp/rpi-preparation.lock
+```
+
+### Visualizando Logs
 
 ```bash
 # Visualizar logs em tempo real
@@ -170,6 +239,34 @@ tail -f /var/log/rpi-preparation.log
 
 # Buscar erros específicos
 grep "ERROR" /var/log/rpi-preparation.log
+
+# Ver progresso da instalação atual
+grep "SUCCESS\|INFO" /var/log/rpi-preparation.log | tail -10
+```
+
+### Verificando Estado de Recuperação
+
+```bash
+# Ver estado atual da instalação
+sudo cat /var/lib/rpi-preparation-state
+
+# Exemplo de conteúdo:
+# LAST_STEP=package_install
+# TIMESTAMP=2025-01-20 14:30:45
+# PID=1234
+# STATUS=running
+```
+
+### Limpeza Manual
+
+Se necessário, limpe o estado manualmente:
+
+```bash
+# Remover estado de instalação (força reinício)
+sudo rm -f /var/lib/rpi-preparation-state
+
+# Remover lock file órfão
+sudo rm -f /tmp/rpi-preparation.lock
 ```
 
 ### Informações do Sistema
@@ -180,6 +277,7 @@ O script automaticamente detecta e registra:
 - Versão do sistema operacional
 - Status de conectividade
 - Resultado de cada instalação
+- Estado de recuperação (se aplicável)
 
 ## Resolução de Problemas
 
