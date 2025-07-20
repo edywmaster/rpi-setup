@@ -5,7 +5,7 @@
 # =============================================================================
 # Purpose: Initial system update and essential package installation
 # Target: Raspberry Pi OS Lite (Debian 12 "bookworm")
-# Version: 1.0.4
+# Version: 1.0.6
 # Compatibility: Raspberry Pi 4B (portable to other models)
 # 
 # Execution methods:
@@ -30,6 +30,16 @@
 # - State tracking for installation steps
 # - Resume capability after power loss or accidental shutdown
 # - User-friendly recovery options (continue/restart/cancel)
+#
+# Bug fix in v1.0.5:
+# - Fixed timestamp format in state file to prevent source command errors
+# - Added proper quoting for state variables to handle spaces
+# - Improved state file format for better shell compatibility
+#
+# UI improvement in v1.0.6:
+# - Cleaned up terminal output by removing duplicate log messages with timestamps
+# - Terminal now shows only clean colored messages for better readability
+# - Complete logs with timestamps still saved to log file
 # =============================================================================
 
 set -eo pipefail  # Exit on error, pipe failures
@@ -90,7 +100,7 @@ log_message() {
     local level="$1"
     local message="$2"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    echo "[$timestamp] [$level] $message" | tee -a "$LOG_FILE"
+    echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
 }
 
 log_info() {
@@ -125,17 +135,17 @@ print_header() {
 
 save_state() {
     local step="$1"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local timestamp=$(date '+%Y-%m-%d_%H:%M:%S')
     
     # Create state directory if it doesn't exist
     mkdir -p "$(dirname "$STATE_FILE")"
     
-    # Save current state
+    # Save current state (using quoted format to handle spaces)
     cat > "$STATE_FILE" << EOF
-LAST_STEP=$step
-TIMESTAMP=$timestamp
+LAST_STEP="$step"
+TIMESTAMP="$timestamp"
 PID=$$
-STATUS=running
+STATUS="running"
 EOF
     
     log_info "Estado salvo: $step"
@@ -161,7 +171,7 @@ get_state_timestamp() {
 
 mark_completion() {
     if [[ -f "$STATE_FILE" ]]; then
-        sed -i 's/STATUS=running/STATUS=completed/' "$STATE_FILE" 2>/dev/null || true
+        sed -i 's/STATUS="running"/STATUS="completed"/' "$STATE_FILE" 2>/dev/null || true
     fi
 }
 

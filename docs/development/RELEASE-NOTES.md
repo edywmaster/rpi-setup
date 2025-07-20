@@ -1,5 +1,63 @@
 # Release Notes
 
+## Version 1.0.6 (Clean Terminal Output)
+
+### 🎨 UI/UX Improvement
+
+- **Limpeza da saída do terminal**: Removidas mensagens duplicadas com timestamp que poluíam a visualização
+- **Interface mais limpa**: Terminal agora exibe apenas mensagens coloridas e diretas
+- **Logging mantido**: Logs completos com timestamps continuam sendo salvos no arquivo `/var/log/rpi-preparation.log`
+
+### 🔄 Antes vs Depois
+
+**Antes (v1.0.5):**
+
+```
+[INFO] Verificando: wget
+[2025-07-20 00:30:07] [INFO] Verificando: wget
+[INFO] ⚡ wget já está instalado
+[2025-07-20 00:30:07] [INFO] ⚡ wget já está instalado
+```
+
+**Depois (v1.0.6):**
+
+```
+[INFO] Verificando: wget
+[INFO] ⚡ wget já está instalado
+```
+
+### 📋 Benefícios
+
+- ✅ Terminal 50% mais limpo e legível
+- ✅ Foco na informação essencial
+- ✅ Experiência de usuário aprimorada
+- ✅ Logs detalhados mantidos para debugging
+
+---
+
+## Version 1.0.5 (State File Format Fix)
+
+### 🐛 Bug Fix
+
+- **Fixed state file format issue**: Corrigido erro de formato do timestamp no arquivo de estado que causava mensagens de erro como `/var/lib/rpi-preparation-state: line 2: 00:28:51: command not found`
+- **Improved variable quoting**: Adicionadas aspas adequadas para todas as variáveis no arquivo de estado
+- **Enhanced timestamp format**: Alterado formato de timestamp de `%Y-%m-%d %H:%M:%S` para `%Y-%m-%d_%H:%M:%S` para melhor compatibilidade com shell
+
+### 🔧 Technical Details
+
+- Problema identificado durante teste real no Raspberry Pi 4B
+- Arquivo de estado agora usa formato compatível com `source` command
+- Eliminadas mensagens de erro durante carregamento do estado
+
+### 📊 Validação
+
+- ✅ Sistema de detecção de interrupções funcionando perfeitamente
+- ✅ Recuperação automática testada e validada
+- ✅ Instalação de 18 pacotes concluída com sucesso
+- ✅ Sistema pronto para uso em produção
+
+---
+
 ## Version 1.0.4 (Interruption Detection & Recovery)
 
 ### 🆕 Nova Funcionalidade Principal
