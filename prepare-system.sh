@@ -1324,6 +1324,40 @@ display_completion_summary() {
         log_success "✅ Sistema atualizado com sucesso!"
     fi
     
+    # Offer kiosk system setup
+    echo
+    log_info "🖥️ Setup adicional disponível:"
+    log_info "   • Sistema Kiosk: Interface touchscreen + servidor de impressão"
+    log_info "   • Inclui: ReactJS, Node.js server, splash screen personalizado"
+    echo
+    
+    read -p "🖥️ Instalar sistema kiosk? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo
+        log_info "🚀 Iniciando setup do sistema kiosk..."
+        log_info "Executando: curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/scripts/setup-kiosk.sh | sudo bash"
+        
+        # Execute kiosk setup
+        if curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/scripts/setup-kiosk.sh | sudo bash; then
+            echo
+            log_success "🎉 Sistema kiosk configurado com sucesso!"
+            log_info "   • Estrutura criada em: /opt/kiosk/"
+            log_info "   • Splash screen: Configurado"
+            log_info "   • Variáveis: Definidas globalmente"
+        else
+            echo
+            log_error "❌ Falha na configuração do sistema kiosk"
+            log_info "Você pode executar manualmente mais tarde:"
+            log_info "curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/scripts/setup-kiosk.sh | sudo bash"
+        fi
+    else
+        echo
+        log_info "ℹ️  Setup do kiosk pulado"
+        log_info "Para instalar posteriormente, execute:"
+        log_info "curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/scripts/setup-kiosk.sh | sudo bash"
+    fi
+    
     # Mark installation as completed
     mark_completion
 }

@@ -45,6 +45,22 @@ nano deploy-multiple.sh
 ./deploy-multiple.sh
 ```
 
+## 🖥️ Sistema Kiosk (Opcional)
+
+Para configurar um sistema kiosk completo após a preparação básica:
+
+```bash
+# Executar após prepare-system.sh
+curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/scripts/setup-kiosk.sh | sudo bash
+```
+
+**Funcionalidades do Kiosk:**
+
+- Interface touchscreen para ReactJS
+- Servidor de impressão local (Node.js + PM2)
+- Splash screen personalizado
+- Estrutura organizada em `/opt/kiosk/`
+
 ## 🎯 Compatibilidade
 
 - **Sistema**: Raspberry Pi OS Lite (Debian 12 "bookworm")

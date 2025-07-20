@@ -31,6 +31,7 @@ Documentação especializada para desenvolvimento assistido por IA:
 ### 🔧 Scripts (`scripts/`)
 
 - **[deploy-multiple.sh](../scripts/deploy-multiple.sh)** - Automação para múltiplos dispositivos
+- **[setup-kiosk.sh](../scripts/setup-kiosk.sh)** - Setup completo do sistema kiosk
 
 ### 🧪 Testes (`tests/`)
 
@@ -45,6 +46,8 @@ Scripts de validação e teste do projeto:
 - **[test-nodejs.sh](../tests/test-nodejs.sh)** - Teste da instalação do Node.js LTS
 - **[test-pm2.sh](../tests/test-pm2.sh)** - Teste da instalação do PM2 (gerenciador de processos)
 - **[test-cups.sh](../tests/test-cups.sh)** - Teste da configuração do CUPS (sistema de impressão)
+- **[test-kiosk-setup.sh](../tests/test-kiosk-setup.sh)** - Teste do script de setup do kiosk
+- **[test-kiosk-integration.sh](../tests/test-kiosk-integration.sh)** - Teste da integração do kiosk no prepare-system.sh
 - **[validate-structure.sh](../tests/validate-structure.sh)** - Validação geral da estrutura
 
 ## 🎯 Script Principal
