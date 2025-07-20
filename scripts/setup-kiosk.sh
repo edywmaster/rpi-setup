@@ -4,25 +4,16 @@
 # Kiosk System Setup Script
 # =============================================================================
 # Purpose: Configure Raspberry Pi for kiosk system with touchscreen interface
-# Target: Post prepare-system.sh execution
+# Target: Post prepare-system.sh execution  
 # Version: 1.2.0
 # Dependencies: Node.js, PM2, CUPS, fbi, imagemagick
 # 
+# Script validation: OK - Functions defined before use
+# Last updated: 2025-07-20
+# 
 # Usage: 
 # - Local: sudo ./setup-kiosk.sh
-# - Remote: curl -fsSL    # Create versioned splash screen
-    log_info "Criando splash screen com versão..."
-    if convert "$SPLASH_IMAGE" \
-             -gravity south \
-             -pointsize 36 \
-             -fill white \
-             -annotate +0+350 "v${kiosk_version}" \
-             "$SPLASH_VERSION" 2>/dev/null; then
-        log_success "✅ Splash screen com versão criado"
-    else
-        log_warn "⚠️  Falha ao criar splash com versão, usando imagem padrão"
-        cp "$SPLASH_IMAGE" "$SPLASH_VERSION" 2>/dev/null || true
-    figithubusercontent.com/edywmaster/rpi-setup/main/scripts/setup-kiosk.sh | sudo bash
+# - Remote: curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/scripts/setup-kiosk.sh | sudo bash
 #
 # System Overview:
 # - ReactJS application for user interface (touchscreen)
@@ -675,6 +666,12 @@ display_completion_summary() {
 # =============================================================================
 
 main() {
+    # Verify that essential functions are loaded
+    if ! declare -f log_info >/dev/null 2>&1; then
+        echo "ERROR: Logging functions not loaded properly" >&2
+        exit 1
+    fi
+    
     print_header "KIOSK SYSTEM SETUP v$SCRIPT_VERSION"
     
     log_info "🚀 Iniciando setup do sistema kiosk..."
@@ -697,4 +694,7 @@ main() {
 }
 
 # Execute main function
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    # Only execute if script is run directly, not sourced
+    main "$@"
+fi
