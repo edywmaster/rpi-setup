@@ -51,6 +51,7 @@
 set -eo pipefail  # Exit on error, pipe failures
 
 # Script configuration
+readonly SCRIPT_VERSION="1.0.7"
 readonly SCRIPT_NAME="$(basename "${0:-prepare-system.sh}")"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || pwd)"
 readonly LOG_FILE="/var/log/rpi-preparation.log"
@@ -689,10 +690,10 @@ display_completion_summary() {
 # =============================================================================
 
 main() {
-    print_header "RASPBERRY PI SYSTEM PREPARATION"
+    print_header "RASPBERRY PI SYSTEM PREPARATION v$SCRIPT_VERSION"
     
     log_info "🚀 Iniciando preparação do sistema..."
-    log_info "📋 Script: $SCRIPT_NAME"
+    log_info "📋 Script: $SCRIPT_NAME v$SCRIPT_VERSION"
     log_info "🕒 Executado em: $(date)"
     
     # Check for previous interrupted installation
