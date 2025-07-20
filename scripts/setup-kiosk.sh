@@ -5,24 +5,41 @@
 # =============================================================================
 # Purpose: Configure Raspberry Pi for kiosk system with touchscreen interface
 # Target: Post prepare-system.sh execution
-# Version: 1.0.0
+# Version: 1.2.0
 # Dependencies: Node.js, PM2, CUPS, fbi, imagemagick
 # 
 # Usage: 
 # - Local: sudo ./setup-kiosk.sh
-# - Remote: curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/scripts/setup-kiosk.sh | sudo bash
+# - Remote: curl -fsSL    # Create versioned splash screen
+    log_info "Criando splash screen com versão..."
+    if convert "$SPLASH_IMAGE" \
+             -gravity south \
+             -pointsize 36 \
+             -fill white \
+             -annotate +0+350 "v${kiosk_version}" \
+             "$SPLASH_VERSION" 2>/dev/null; then
+        log_success "✅ Splash screen com versão criado"
+    else
+        log_warn "⚠️  Falha ao criar splash com versão, usando imagem padrão"
+        cp "$SPLASH_IMAGE" "$SPLASH_VERSION" 2>/dev/null || true
+    figithubusercontent.com/edywmaster/rpi-setup/main/scripts/setup-kiosk.sh | sudo bash
 #
 # System Overview:
 # - ReactJS application for user interface (touchscreen)
 # - Local Node.js print server (port 50001)
 # - PDF download and printing via Python scripts
 # - Integration with external API for user data and badge printing
+#
+# Version alignment:
+# - Matches prepare-system.sh v1.2.0 for compatibility
+# - Requires prepare-system.sh v1.2.0 or higher
+# - Integrates with Node.js LTS, PM2, and CUPS installations
 # =============================================================================
 
 set -eo pipefail  # Exit on error, pipe failures
 
 # Script configuration
-readonly SCRIPT_VERSION="1.0.0"
+readonly SCRIPT_VERSION="1.2.0"
 readonly SCRIPT_NAME="$(basename "${0:-setup-kiosk.sh}")"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || pwd)"
 readonly LOG_FILE="/var/log/kiosk-setup.log"
@@ -200,8 +217,28 @@ check_dependencies() {
     
     if [[ ${#missing_deps[@]} -gt 0 ]]; then
         log_error "Dependências em falta: ${missing_deps[*]}"
-        log_info "Execute primeiro o prepare-system.sh para instalar as dependências"
+        log_info "Execute primeiro o prepare-system.sh v$SCRIPT_VERSION para instalar as dependências"
         exit 1
+    fi
+    
+    # Check Node.js version compatibility
+    if command -v node >/dev/null 2>&1; then
+        local node_version=$(node -v 2>/dev/null)
+        log_info "✅ Node.js detectado: $node_version"
+    fi
+    
+    # Check PM2 availability
+    if command -v pm2 >/dev/null 2>&1; then
+        local pm2_version=$(pm2 -V 2>/dev/null)
+        log_info "✅ PM2 detectado: v$pm2_version"
+    fi
+    
+    # Check CUPS service
+    if systemctl is-active --quiet cups 2>/dev/null; then
+        log_info "✅ CUPS está ativo e funcionando"
+    else
+        log_warn "⚠️  CUPS pode não estar configurado corretamente"
+        log_info "Certifique-se de que prepare-system.sh foi executado com sucesso"
     fi
     
     log_success "Todas as dependências estão disponíveis"
@@ -324,11 +361,10 @@ configure_kiosk_variables() {
     
     log_info "Configurando variáveis globais do sistema kiosk..."
     
-    # Get prepare-system version for reference
-    local prepare_version="1.2.0"  # Latest prepare-system version
+    # Use script version for consistency with prepare-system.sh
+    local KIOSK_VERSION="$SCRIPT_VERSION"  # Matches prepare-system.sh version
     
     # Default configuration values
-    local KIOSK_VERSION="$prepare_version"
     local APP_MODE="REDE"  # REDE or WEB
     local APP_URL="http://localhost:3000"
     local APP_API_URL="https://app.ticketbay.com.br/api/v1"
@@ -425,8 +461,8 @@ setup_splash_screen() {
     
     log_info "Configurando splash screen customizado..."
     
-    # Use variables already defined in script (no need to source config file)
-    local prepare_version="1.2.0"  # Use same version as configure_kiosk_variables
+    # Use script version for consistency
+    local kiosk_version="$SCRIPT_VERSION"  # Use script version for splash screen
     
     # Check if base splash image exists (create a simple one if not)
     if [[ ! -f "$SPLASH_IMAGE" ]]; then
@@ -544,7 +580,7 @@ EOF
     log_info "📋 Splash screen configurado:"
     log_info "   • Imagem: $splash_to_use"
     log_info "   • Serviço: kiosk-splash.service"
-    log_info "   • Versão exibida: v$prepare_version"
+    log_info "   • Versão exibida: v$kiosk_version"
     log_info "   • Dispositivo: /dev/fb0"
 }
 
@@ -583,15 +619,15 @@ display_completion_summary() {
     log_success "🎉 Setup do sistema kiosk concluído com sucesso!"
     echo
     
-    # Use variables already defined in script
-    local prepare_version="1.2.0"
+    # Use script version for consistency
+    local kiosk_version="$SCRIPT_VERSION"
     local app_mode="REDE"
     local app_url="http://localhost:3000"
     local app_api_url="https://app.ticketbay.com.br/api/v1"
     local print_port="50001"
     
     log_info "📋 Resumo da instalação:"
-    log_info "   • Sistema: Kiosk v$prepare_version"
+    log_info "   • Sistema: Kiosk v$kiosk_version"
     log_info "   • Modo: $app_mode"
     log_info "   • URL da aplicação: $app_url"
     log_info "   • API URL: $app_api_url"
@@ -609,7 +645,7 @@ display_completion_summary() {
     log_info "🖼️ Splash screen:"
     log_info "   • Serviço: kiosk-splash.service (habilitado)"
     log_info "   • Imagem: $SPLASH_VERSION"
-    log_info "   • Versão exibida: v$prepare_version"
+    log_info "   • Versão exibida: v$kiosk_version"
     
     echo
     log_info "📄 Arquivos importantes:"
