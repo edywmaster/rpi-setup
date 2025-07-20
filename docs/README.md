@@ -43,6 +43,7 @@ Scripts de validação e teste do projeto:
 - **[test-autologin.sh](../tests/test-autologin.sh)** - Teste da funcionalidade de autologin
 - **[test-boot-config.sh](../tests/test-boot-config.sh)** - Teste de configurações de boot
 - **[test-nodejs.sh](../tests/test-nodejs.sh)** - Teste da instalação do Node.js LTS
+- **[test-pm2.sh](../tests/test-pm2.sh)** - Teste da instalação do PM2 (gerenciador de processos)
 - **[test-cups.sh](../tests/test-cups.sh)** - Teste da configuração do CUPS (sistema de impressão)
 - **[validate-structure.sh](../tests/validate-structure.sh)** - Validação geral da estrutura
 

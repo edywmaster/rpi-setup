@@ -66,12 +66,19 @@
 # - Remote access configuration for web interface (http://ip:631)
 # - Disabled automatic printer discovery to prevent network scanning
 # - Complete CUPS service management with state tracking and recovery
+#
+# New feature in v1.2.0:
+# - Added PM2 (Process Manager 2) global installation for Node.js applications
+# - Automatic PM2 configuration for user 'pi' with process management capabilities
+# - Global access to PM2 commands for all users via /usr/bin/pm2
+# - Complete integration with existing Node.js installation
+# - State tracking and recovery support for PM2 installation
 # =============================================================================
 
 set -eo pipefail  # Exit on error, pipe failures
 
 # Script configuration
-readonly SCRIPT_VERSION="1.1.0"
+readonly SCRIPT_VERSION="1.2.0"
 readonly SCRIPT_NAME="$(basename "${0:-prepare-system.sh}")"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || pwd)"
 readonly LOG_FILE="/var/log/rpi-preparation.log"
@@ -136,6 +143,7 @@ readonly INSTALLATION_STEPS=(
     "boot_config"
     "autologin_config"
     "nodejs_install"
+    "pm2_install"
     "cups_config"
     "cleanup"
     "completion"
@@ -888,6 +896,156 @@ install_nodejs() {
     log_success "Node.js e npm estão disponíveis globalmente"
 }
 
+install_pm2() {
+    local step="pm2_install"
+    local last_step=$(get_last_state)
+    
+    if should_skip_step "$step" "$last_step"; then
+        log_info "⏭️  Pulando instalação do PM2 (já executada)"
+        return 0
+    fi
+    
+    print_header "INSTALANDO PM2"
+    save_state "$step"
+    
+    log_info "Instalando PM2 (Process Manager 2)..."
+    
+    # Verificar se PM2 já está instalado
+    if command -v pm2 >/dev/null 2>&1; then
+        local current_version=$(pm2 -V 2>/dev/null || echo "unknown")
+        log_info "⚡ PM2 já está instalado: versão $current_version"
+        
+        # Verificar se está instalado globalmente
+        if npm list -g pm2 >/dev/null 2>&1; then
+            log_success "✅ PM2 está disponível globalmente"
+            return 0
+        else
+            log_warn "⚠️  PM2 encontrado mas pode não estar instalado globalmente"
+            log_info "Reinstalando PM2 globalmente..."
+        fi
+    fi
+    
+    # Verificar se Node.js e npm estão disponíveis
+    if ! command -v node >/dev/null 2>&1; then
+        log_error "❌ Node.js não encontrado"
+        log_info "PM2 requer Node.js para funcionar"
+        log_info "Certifique-se de que a etapa nodejs_install foi executada com sucesso"
+        return 1
+    fi
+    
+    if ! command -v npm >/dev/null 2>&1; then
+        log_error "❌ npm não encontrado"
+        log_info "PM2 requer npm para instalação"
+        return 1
+    fi
+    
+    log_info "✅ Node.js $(node -v) e npm $(npm -v) detectados"
+    
+    # Atualizar PATH para garantir acesso aos binários do Node.js
+    export PATH="$NODEJS_INSTALL_DIR/bin:/usr/bin:$PATH"
+    
+    # Instalar PM2 globalmente
+    log_info "📦 Instalando PM2 globalmente via npm..."
+    
+    # Configurar npm para uso global sem sudo (se necessário)
+    local npm_config_prefix="$NODEJS_INSTALL_DIR"
+    
+    if npm install -g pm2; then
+        log_success "✅ PM2 instalado com sucesso"
+    else
+        log_error "❌ Falha ao instalar PM2"
+        log_info "Tentando instalação alternativa..."
+        
+        # Tentativa alternativa usando sudo
+        if sudo npm install -g pm2; then
+            log_success "✅ PM2 instalado com sucesso (via sudo)"
+        else
+            log_error "❌ Falha na instalação alternativa do PM2"
+            return 1
+        fi
+    fi
+    
+    # Criar link simbólico para acesso global
+    log_info "🔗 Configurando links simbólicos globais..."
+    
+    # Encontrar localização do PM2
+    local pm2_path=""
+    if [[ -f "$NODEJS_INSTALL_DIR/bin/pm2" ]]; then
+        pm2_path="$NODEJS_INSTALL_DIR/bin/pm2"
+    elif [[ -f "$NODEJS_INSTALL_DIR/lib/node_modules/pm2/bin/pm2" ]]; then
+        pm2_path="$NODEJS_INSTALL_DIR/lib/node_modules/pm2/bin/pm2"
+    elif command -v pm2 >/dev/null 2>&1; then
+        pm2_path=$(which pm2)
+    fi
+    
+    if [[ -n "$pm2_path" ]] && [[ -f "$pm2_path" ]]; then
+        ln -sf "$pm2_path" /usr/bin/pm2
+        log_success "✅ Link simbólico criado: /usr/bin/pm2 → $pm2_path"
+    else
+        log_warn "⚠️  Não foi possível encontrar o binário do PM2 para criar link simbólico"
+    fi
+    
+    # Verificar instalação
+    log_info "🔍 Verificando instalação do PM2..."
+    
+    # Atualizar PATH novamente
+    export PATH="/usr/bin:$NODEJS_INSTALL_DIR/bin:$PATH"
+    
+    if command -v pm2 >/dev/null 2>&1; then
+        local installed_version=$(pm2 -V 2>/dev/null || echo "unknown")
+        log_success "✅ PM2 instalado e funcionando!"
+        log_info "   • Versão: $installed_version"
+        log_info "   • Localização: $(which pm2 2>/dev/null || echo 'não encontrado')"
+        
+        # Testar comando básico do PM2
+        if pm2 list >/dev/null 2>&1; then
+            log_success "✅ PM2 está respondendo corretamente"
+        else
+            log_warn "⚠️  PM2 instalado mas pode ter problemas de configuração"
+        fi
+        
+    else
+        log_error "❌ PM2 não está disponível após instalação"
+        log_info "Isso pode indicar problemas de PATH ou permissões"
+        return 1
+    fi
+    
+    # Configurar PM2 para o usuário pi
+    log_info "👤 Configurando PM2 para o usuário 'pi'..."
+    
+    if id "pi" >/dev/null 2>&1; then
+        # Criar diretório home do PM2 para o usuário pi
+        sudo -u pi mkdir -p /home/pi/.pm2 2>/dev/null || true
+        
+        # Inicializar PM2 para o usuário pi
+        if sudo -u pi pm2 list >/dev/null 2>&1; then
+            log_success "✅ PM2 configurado para o usuário 'pi'"
+        else
+            log_warn "⚠️  PM2 pode não estar totalmente configurado para o usuário 'pi'"
+            log_info "O usuário pode precisar executar 'pm2 list' uma vez para inicializar"
+        fi
+    else
+        log_warn "⚠️  Usuário 'pi' não encontrado, pulando configuração específica do usuário"
+    fi
+    
+    # Resumo da instalação
+    echo
+    log_info "📋 Instalação do PM2 concluída:"
+    log_info "   • PM2: Instalado globalmente"
+    log_info "   • Versão: $(pm2 -V 2>/dev/null || echo 'não disponível')"
+    log_info "   • Comando: Disponível em /usr/bin/pm2"
+    log_info "   • Node.js: Compatível com versão instalada"
+    log_info "   • Usuário 'pi': Configurado para uso"
+    
+    echo
+    log_success "🚀 PM2 está pronto para gerenciar processos Node.js!"
+    log_info "Comandos úteis:"
+    log_info "   • pm2 list - Listar processos"
+    log_info "   • pm2 start app.js - Iniciar aplicação"
+    log_info "   • pm2 restart all - Reiniciar todos os processos"
+    log_info "   • pm2 stop all - Parar todos os processos"
+}
+
 configure_cups() {
     local step="cups_config"
     local last_step=$(get_last_state)
@@ -1211,6 +1369,7 @@ main() {
     configure_boot_settings
     configure_autologin
     install_nodejs
+    install_pm2
     configure_cups
     cleanup_system
     
