@@ -4,6 +4,35 @@
 
 This is a Bash automation suite for Raspberry Pi OS Lite (Debian 12 "bookworm") targeting Raspberry Pi 4B devices with portability considerations for other models.
 
+## Project Structure
+
+```
+rpi-setup/
+├── README.md                    # Main user-facing documentation (production-ready)
+├── prepare-system.sh            # Main production script
+├── docs/                        # All documentation
+│   ├── README.md               # Documentation index
+│   ├── production/             # Production documentation
+│   │   ├── DEPLOYMENT.md       # Large-scale deployment guide
+│   │   └── PREPARE-SYSTEM.md   # Detailed script documentation
+│   └── development/            # Development documentation
+│       ├── README-DETAILED.md  # Original detailed README
+│       └── RELEASE-NOTES.md    # Version history and bug fixes
+├── scripts/                    # Automation scripts
+│   └── deploy-multiple.sh      # Multi-device deployment
+├── tests/                      # Test scripts
+│   └── test-script.sh         # Validation scripts
+└── .github/
+    └── copilot-instructions.md # AI development guidelines
+```
+
+### Documentation Philosophy
+
+- **README.md**: Keep minimal, production-focused, quick-start only
+- **docs/production/**: End-user production documentation
+- **docs/development/**: Technical details, changes, development info
+- **Separation**: User-facing vs developer-facing content clearly separated
+
 ## Core Architecture & Patterns
 
 ### Script Organization
@@ -105,3 +134,29 @@ OS_VERSION=$(lsb_release -rs 2>/dev/null || echo "Unknown")
 - Group related scripts in subdirectories if needed
 - Include version/compatibility info in headers
 - Maintain executable permissions (`chmod +x`)
+
+### File Organization Guidelines
+
+#### Production Files (Root Level)
+
+- `prepare-system.sh` - Main production script
+- `README.md` - Minimal, user-focused documentation
+
+#### Documentation Structure
+
+- `docs/production/` - End-user documentation (deployment guides, manuals)
+- `docs/development/` - Technical documentation (detailed READMEs, release notes)
+- `docs/README.md` - Documentation index and navigation guide
+
+#### Scripts and Tools
+
+- `scripts/` - Utility scripts for automation (deployment, management)
+- `tests/` - Testing and validation scripts
+- `.github/` - Repository configuration and AI instructions
+
+#### Development Workflow
+
+- Keep user-facing docs minimal and focused
+- Move detailed technical content to `docs/development/`
+- Use `docs/production/` for operational guides
+- Test scripts go in `tests/`, utility scripts in `scripts/`

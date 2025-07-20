@@ -13,7 +13,7 @@ curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/prepare-s
 ## 📦 O que é instalado automaticamente
 
 - **Sistema**: wget, curl, jq, lsof, unzip, build-essential
-- **Interface Gráfica**: xserver-xorg, xinit, openbox, chromium-browser  
+- **Interface Gráfica**: xserver-xorg, xinit, openbox, chromium-browser
 - **Display**: fbi, unclutter, imagemagick, libgbm-dev
 - **Áudio**: libasound2
 - **Python**: python3-pyxdg
@@ -21,11 +21,13 @@ curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/prepare-s
 ## 📱 Múltiplos Dispositivos
 
 ### Via SSH Individual
+
 ```bash
 ssh pi@192.168.1.100 "curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/prepare-system.sh | sudo bash"
 ```
 
 ### Script Automatizado
+
 ```bash
 # Baixar e configurar script de deployment
 wget https://raw.githubusercontent.com/edywmaster/rpi-setup/main/scripts/deploy-multiple.sh
