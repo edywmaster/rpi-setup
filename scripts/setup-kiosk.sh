@@ -616,7 +616,7 @@ After=systemd-user-sessions.service plymouth-quit-wait.service kiosk-splash.serv
 Conflicts=getty@tty1.service
 
 [Service]
-ExecStart=/bin/bash /opt/kiosk/start.sh
+ExecStart=/bin/bash /opt/kiosk/scripts/start.sh
 TTYPath=/dev/tty1
 StandardInput=tty
 StandardOutput=tty
