@@ -4,12 +4,9 @@
 # Kiosk System Setup Script
 # =============================================================================
 # Purpose: Configure Raspberry Pi for kiosk system with touchscreen interface
-# Target: Post prepare-system.sh execution  
-# Version: 1.2.0
+# Target: Post prepare-system.sh execution
+# Version: 1.0.0
 # Dependencies: Node.js, PM2, CUPS, fbi, imagemagick
-# 
-# Script validation: OK - Functions defined before use
-# Last updated: 2025-07-20
 # 
 # Usage: 
 # - Local: sudo ./setup-kiosk.sh
@@ -20,17 +17,12 @@
 # - Local Node.js print server (port 50001)
 # - PDF download and printing via Python scripts
 # - Integration with external API for user data and badge printing
-#
-# Version alignment:
-# - Matches prepare-system.sh v1.2.0 for compatibility
-# - Requires prepare-system.sh v1.2.0 or higher
-# - Integrates with Node.js LTS, PM2, and CUPS installations
 # =============================================================================
 
 set -eo pipefail  # Exit on error, pipe failures
 
 # Script configuration
-readonly SCRIPT_VERSION="1.2.0"
+readonly SCRIPT_VERSION="1.0.1"
 readonly SCRIPT_NAME="$(basename "${0:-setup-kiosk.sh}")"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || pwd)"
 readonly LOG_FILE="/var/log/kiosk-setup.log"
@@ -208,28 +200,8 @@ check_dependencies() {
     
     if [[ ${#missing_deps[@]} -gt 0 ]]; then
         log_error "Dependências em falta: ${missing_deps[*]}"
-        log_info "Execute primeiro o prepare-system.sh v$SCRIPT_VERSION para instalar as dependências"
+        log_info "Execute primeiro o prepare-system.sh para instalar as dependências"
         exit 1
-    fi
-    
-    # Check Node.js version compatibility
-    if command -v node >/dev/null 2>&1; then
-        local node_version=$(node -v 2>/dev/null)
-        log_info "✅ Node.js detectado: $node_version"
-    fi
-    
-    # Check PM2 availability
-    if command -v pm2 >/dev/null 2>&1; then
-        local pm2_version=$(pm2 -V 2>/dev/null)
-        log_info "✅ PM2 detectado: v$pm2_version"
-    fi
-    
-    # Check CUPS service
-    if systemctl is-active --quiet cups 2>/dev/null; then
-        log_info "✅ CUPS está ativo e funcionando"
-    else
-        log_warn "⚠️  CUPS pode não estar configurado corretamente"
-        log_info "Certifique-se de que prepare-system.sh foi executado com sucesso"
     fi
     
     log_success "Todas as dependências estão disponíveis"
@@ -352,10 +324,11 @@ configure_kiosk_variables() {
     
     log_info "Configurando variáveis globais do sistema kiosk..."
     
-    # Use script version for consistency with prepare-system.sh
-    local KIOSK_VERSION="$SCRIPT_VERSION"  # Matches prepare-system.sh version
+    # Get prepare-system version for reference
+    local prepare_version="1.2.0"  # Latest prepare-system version
     
     # Default configuration values
+    local KIOSK_VERSION="$prepare_version"
     local APP_MODE="REDE"  # REDE or WEB
     local APP_URL="http://localhost:3000"
     local APP_API_URL="https://app.ticketbay.com.br/api/v1"
@@ -452,8 +425,8 @@ setup_splash_screen() {
     
     log_info "Configurando splash screen customizado..."
     
-    # Use script version for consistency
-    local kiosk_version="$SCRIPT_VERSION"  # Use script version for splash screen
+    # Use variables already defined in script (no need to source config file)
+    local prepare_version="1.2.0"  # Use same version as configure_kiosk_variables
     
     # Check if base splash image exists (create a simple one if not)
     if [[ ! -f "$SPLASH_IMAGE" ]]; then
@@ -487,7 +460,7 @@ setup_splash_screen() {
              -gravity south \
              -pointsize 36 \
              -fill white \
-             -annotate +0+250 "v${prepare_version}" \
+             -annotate +0+50 "v${KIOSK_VERSION}" \
              "$SPLASH_VERSION" 2>/dev/null; then
         log_success "✅ Splash screen com versão criado"
     else
@@ -571,7 +544,7 @@ EOF
     log_info "📋 Splash screen configurado:"
     log_info "   • Imagem: $splash_to_use"
     log_info "   • Serviço: kiosk-splash.service"
-    log_info "   • Versão exibida: v$kiosk_version"
+    log_info "   • Versão exibida: v$KIOSK_VERSION"
     log_info "   • Dispositivo: /dev/fb0"
 }
 
@@ -610,19 +583,15 @@ display_completion_summary() {
     log_success "🎉 Setup do sistema kiosk concluído com sucesso!"
     echo
     
-    # Use script version for consistency
-    local kiosk_version="$SCRIPT_VERSION"
-    local app_mode="REDE"
-    local app_url="http://localhost:3000"
-    local app_api_url="https://app.ticketbay.com.br/api/v1"
-    local print_port="50001"
+    # Source the configuration to display current values
+    source "$KIOSK_CONFIG_FILE"
     
     log_info "📋 Resumo da instalação:"
-    log_info "   • Sistema: Kiosk v$kiosk_version"
-    log_info "   • Modo: $app_mode"
-    log_info "   • URL da aplicação: $app_url"
-    log_info "   • API URL: $app_api_url"
-    log_info "   • Porta de impressão: $print_port"
+    log_info "   • Sistema: Kiosk v$KIOSK_VERSION"
+    log_info "   • Modo: $APP_MODE"
+    log_info "   • URL da aplicação: $APP_URL"
+    log_info "   • API URL: $APP_API_URL"
+    log_info "   • Porta de impressão: $PRINT_PORT"
     
     echo
     log_info "📁 Estrutura criada:"
@@ -636,7 +605,7 @@ display_completion_summary() {
     log_info "🖼️ Splash screen:"
     log_info "   • Serviço: kiosk-splash.service (habilitado)"
     log_info "   • Imagem: $SPLASH_VERSION"
-    log_info "   • Versão exibida: v$kiosk_version"
+    log_info "   • Versão exibida: v$KIOSK_VERSION"
     
     echo
     log_info "📄 Arquivos importantes:"
@@ -666,12 +635,6 @@ display_completion_summary() {
 # =============================================================================
 
 main() {
-    # Verify that essential functions are loaded
-    if ! declare -f log_info >/dev/null 2>&1; then
-        echo "ERROR: Logging functions not loaded properly" >&2
-        exit 1
-    fi
-    
     print_header "KIOSK SYSTEM SETUP v$SCRIPT_VERSION"
     
     log_info "🚀 Iniciando setup do sistema kiosk..."
@@ -694,7 +657,4 @@ main() {
 }
 
 # Execute main function
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    # Only execute if script is run directly, not sourced
-    main "$@"
-fi
+main "$@"
