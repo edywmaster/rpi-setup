@@ -20,6 +20,7 @@ curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/prepare-s
 - **Áudio**: libasound2
 - **Python**: python3-pyxdg
 - **Node.js**: Instalação automática da versão LTS (v22.13.1) com npm e npx
+- **CUPS**: Sistema de impressão com interface web (http://ip:631) e acesso remoto
 - **Boot**: Configurações otimizadas para kiosk/display
 - **Login**: Autologin automático para usuário 'pi'
 
@@ -57,4 +58,4 @@ nano deploy-multiple.sh
 
 ---
 
-**Versão atual**: v1.0.9 | **Repositório**: [edywmaster/rpi-setup](https://github.com/edywmaster/rpi-setup)
+**Versão atual**: v1.1.0 | **Repositório**: [edywmaster/rpi-setup](https://github.com/edywmaster/rpi-setup)

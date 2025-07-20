@@ -59,12 +59,19 @@
 # - Configures global permissions for all users
 # - Downloads and installs latest LTS version (v22.13.1)
 # - Creates global symlinks and validates installation
+#
+# New feature in v1.1.0:
+# - Added CUPS (Common Unix Printing System) installation and configuration
+# - Automatic user addition to lpadmin group for printer management
+# - Remote access configuration for web interface (http://ip:631)
+# - Disabled automatic printer discovery to prevent network scanning
+# - Complete CUPS service management with state tracking and recovery
 # =============================================================================
 
 set -eo pipefail  # Exit on error, pipe failures
 
 # Script configuration
-readonly SCRIPT_VERSION="1.0.9"
+readonly SCRIPT_VERSION="1.1.0"
 readonly SCRIPT_NAME="$(basename "${0:-prepare-system.sh}")"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || pwd)"
 readonly LOG_FILE="/var/log/rpi-preparation.log"
@@ -115,6 +122,8 @@ readonly ESSENTIAL_PACKAGES=(
     "build-essential"   # Build tools
     "xz-utils"          # XZ compression utilities (for Node.js)
     "libssl-dev"        # SSL development libraries (for Node.js)
+    "cups"              # Common Unix Printing System
+    "cups-client"       # CUPS client utilities
 )
 
 # Installation steps for state tracking
@@ -127,6 +136,7 @@ readonly INSTALLATION_STEPS=(
     "boot_config"
     "autologin_config"
     "nodejs_install"
+    "cups_config"
     "cleanup"
     "completion"
 )
@@ -878,6 +888,182 @@ install_nodejs() {
     log_success "Node.js e npm estão disponíveis globalmente"
 }
 
+configure_cups() {
+    local step="cups_config"
+    local last_step=$(get_last_state)
+    
+    if should_skip_step "$step" "$last_step"; then
+        log_info "⏭️  Pulando configuração do CUPS (já executada)"
+        return 0
+    fi
+    
+    print_header "CONFIGURANDO CUPS (SISTEMA DE IMPRESSÃO)"
+    save_state "$step"
+    
+    log_info "Configurando CUPS (Common Unix Printing System)..."
+    
+    # Verificar se CUPS está instalado
+    if ! command -v cupsd >/dev/null 2>&1; then
+        log_error "❌ CUPS não está instalado"
+        log_info "O CUPS deveria ter sido instalado na etapa de pacotes essenciais"
+        return 1
+    fi
+    
+    log_success "✅ CUPS detectado no sistema"
+    
+    # Adicionar usuário 'pi' ao grupo lpadmin
+    log_info "👤 Adicionando usuário 'pi' ao grupo lpadmin..."
+    if id "pi" >/dev/null 2>&1; then
+        if usermod -aG lpadmin pi; then
+            log_success "✅ Usuário 'pi' adicionado ao grupo lpadmin"
+        else
+            log_error "❌ Falha ao adicionar usuário 'pi' ao grupo lpadmin"
+            return 1
+        fi
+    else
+        log_warn "⚠️  Usuário 'pi' não encontrado, pulando adição ao grupo lpadmin"
+    fi
+    
+    # Configurar cupsd.conf para acesso remoto
+    log_info "🌐 Configurando acesso remoto ao CUPS..."
+    local cupsd_conf="/etc/cups/cupsd.conf"
+    
+    if [[ ! -f "$cupsd_conf" ]]; then
+        log_error "❌ Arquivo $cupsd_conf não encontrado"
+        return 1
+    fi
+    
+    # Backup do arquivo original
+    cp "$cupsd_conf" "$cupsd_conf.backup.$(date +%Y%m%d_%H%M%S)"
+    log_info "📋 Backup criado: $cupsd_conf.backup.$(date +%Y%m%d_%H%M%S)"
+    
+    # Configurar para escutar em todas as interfaces
+    log_info "🔧 Configurando escuta em todas as interfaces..."
+    sed -i 's/^Listen localhost:631/Listen 0.0.0.0:631/' "$cupsd_conf" || true
+    sed -i 's/^Listen \/run\/cups\/cups.sock/Listen \/run\/cups\/cups.sock/' "$cupsd_conf" || true
+    
+    # Configurar permissões de acesso
+    log_info "🔐 Configurando permissões de acesso..."
+    
+    # Seção <Location />
+    if grep -q "<Location />" "$cupsd_conf"; then
+        sed -i '/<Location \/>/,/<\/Location>/c\
+<Location />\
+  Order allow,deny\
+  Allow all\
+<\/Location>' "$cupsd_conf"
+        log_info "✅ Configurada seção <Location />"
+    fi
+    
+    # Seção <Location /admin>
+    if grep -q "<Location /admin>" "$cupsd_conf"; then
+        sed -i '/<Location \/admin>/,/<\/Location>/c\
+<Location /admin>\
+  Order allow,deny\
+  Allow all\
+<\/Location>' "$cupsd_conf"
+        log_info "✅ Configurada seção <Location /admin>"
+    fi
+    
+    # Seção <Location /admin/conf>
+    if grep -q "<Location /admin/conf>" "$cupsd_conf"; then
+        sed -i '/<Location \/admin\/conf>/,/<\/Location>/c\
+<Location /admin/conf>\
+  AuthType Default\
+  Require user @SYSTEM\
+  Order allow,deny\
+  Allow all\
+<\/Location>' "$cupsd_conf"
+        log_info "✅ Configurada seção <Location /admin/conf>"
+    fi
+    
+    # Desabilitar descoberta automática de impressoras
+    log_info "🚫 Desabilitando descoberta automática de impressoras..."
+    if grep -q "^Browsing" "$cupsd_conf"; then
+        sed -i 's/^Browsing.*/Browsing Off/' "$cupsd_conf"
+    else
+        echo "Browsing Off" >> "$cupsd_conf"
+    fi
+    
+    if grep -q "^BrowseLocalProtocols" "$cupsd_conf"; then
+        sed -i 's/^BrowseLocalProtocols.*/BrowseLocalProtocols none/' "$cupsd_conf"
+    else
+        echo "BrowseLocalProtocols none" >> "$cupsd_conf"
+    fi
+    log_info "✅ Descoberta automática desabilitada"
+    
+    # Configurar cups-files.conf
+    log_info "📁 Configurando cups-files.conf..."
+    local cups_files_conf="/etc/cups/cups-files.conf"
+    
+    if [[ -f "$cups_files_conf" ]]; then
+        # Backup do arquivo
+        cp "$cups_files_conf" "$cups_files_conf.backup.$(date +%Y%m%d_%H%M%S)"
+        
+        # Configurar SystemGroup
+        if grep -q "^SystemGroup" "$cups_files_conf"; then
+            sed -i '/^SystemGroup/c\SystemGroup lpadmin' "$cups_files_conf"
+        else
+            echo "SystemGroup lpadmin" >> "$cups_files_conf"
+        fi
+        log_info "✅ SystemGroup configurado para lpadmin"
+    else
+        log_warn "⚠️  Arquivo cups-files.conf não encontrado"
+    fi
+    
+    # Iniciar e habilitar serviço CUPS
+    log_info "🔄 Iniciando e habilitando serviço CUPS..."
+    if systemctl start cups; then
+        log_success "✅ Serviço CUPS iniciado"
+    else
+        log_error "❌ Falha ao iniciar serviço CUPS"
+        return 1
+    fi
+    
+    if systemctl enable cups; then
+        log_success "✅ Serviço CUPS habilitado para inicialização automática"
+    else
+        log_error "❌ Falha ao habilitar serviço CUPS"
+        return 1
+    fi
+    
+    # Reiniciar serviço para aplicar configurações
+    log_info "🔄 Reiniciando serviço CUPS para aplicar configurações..."
+    if systemctl restart cups; then
+        log_success "✅ Serviço CUPS reiniciado com sucesso"
+    else
+        log_error "❌ Falha ao reiniciar serviço CUPS"
+        return 1
+    fi
+    
+    # Verificar status do serviço
+    log_info "🔍 Verificando status do serviço CUPS..."
+    if systemctl is-active --quiet cups; then
+        log_success "✅ Serviço CUPS está ativo e funcionando"
+    else
+        log_warn "⚠️  Serviço CUPS pode não estar funcionando corretamente"
+        log_info "Status: $(systemctl is-active cups 2>/dev/null || echo 'unknown')"
+    fi
+    
+    # Obter IP para interface web
+    local pi_ip=$(hostname -I | awk '{print $1}' || echo "localhost")
+    
+    # Resumo da configuração
+    echo
+    log_info "📋 Configuração do CUPS concluída:"
+    log_info "   • Serviço: Ativo e habilitado"
+    log_info "   • Usuário 'pi': Adicionado ao grupo lpadmin"
+    log_info "   • Acesso remoto: Habilitado"
+    log_info "   • Interface web: http://$pi_ip:631"
+    log_info "   • Descoberta automática: Desabilitada"
+    log_info "   • Configurações: Backup criado"
+    
+    echo
+    log_success "🖨️  CUPS configurado com sucesso!"
+    log_info "Acesse a interface web do CUPS em: http://$pi_ip:631"
+    log_info "Para gerenciar impressoras: http://$pi_ip:631/admin"
+}
+
 cleanup_system() {
     local step="cleanup"
     local last_step=$(get_last_state)
@@ -1025,6 +1211,7 @@ main() {
     configure_boot_settings
     configure_autologin
     install_nodejs
+    configure_cups
     cleanup_system
     
     # Completion
