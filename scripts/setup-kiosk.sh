@@ -553,6 +553,89 @@ EOF
     log_info "   • Dispositivo: /dev/fb0"
 }
 
+setup_startup_service() {
+    local step="startup_service"
+    local last_step=$(get_last_state)
+    
+    if should_skip_step "$step" "$last_step"; then
+        log_info "⏭️  Pulando configuração de serviço de inicialização (já executada)"
+        return 0
+    fi
+
+    print_header "CONFIGURANDO SERVIÇO DE INICIALIZAÇÃO"
+    save_state "$step"
+
+    log_info "Configurando serviço de inicialização..."
+
+    # Create startup service
+    log_info "Criando serviço de inicialização..."
+
+    if [[ -f "$STARTUP_SERVICE_PATH" ]]; then
+        log_info "⚡ Serviço de inicialização já existe, atualizando..."
+        systemctl stop kiosk-start.service 2>/dev/null || true
+        systemctl disable kiosk-start.service 2>/dev/null || true
+    fi
+
+    cat > "$STARTUP_SERVICE_PATH" << EOF
+[Unit]
+Description=Kiosk Auto Shell on tty1
+After=systemd-user-sessions.service plymouth-quit-wait.service kiosk-splash.service  getty.target
+Conflicts=getty@tty1.service
+
+[Service]
+ExecStart=/bin/bash /opt/kiosk/start.sh
+TTYPath=/dev/tty1
+StandardInput=tty
+StandardOutput=tty
+#StandardError=tty
+#Restart=always
+#RestartSec=1
+User=pi
+WorkingDirectory=/opt/kiosk
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    if [[ -f "$STARTUP_SERVICE_PATH" ]]; then
+        log_success "✅ Serviço de inicialização criado: $STARTUP_SERVICE_PATH"
+    else
+        log_error "❌ Falha ao criar serviço de inicialização"
+        return 1
+    fi
+    
+    # Enable and start the service
+    log_info "Habilitando serviço de inicialização..."
+    
+    if systemctl daemon-reload; then
+        log_success "✅ Systemd recarregado"
+    else
+        log_error "❌ Falha ao recarregar systemd"
+        return 1
+    fi
+    
+    if systemctl enable kiosk-start.service; then
+        log_success "✅ Serviço de inicialização habilitado"
+    else
+        log_error "❌ Falha ao habilitar serviço de inicialização"
+        return 1
+    fi
+    
+    # Test the service (optional, as it affects display)
+    log_info "ℹ️  Serviço de inicialização configurado (será ativo no próximo boot)"
+    
+    # Set proper permissions
+    chmod 644 "$STARTUP_SERVICE_PATH"
+    chown pi:pi "$KIOSK_START_SCRIPT" 2>/dev/null || true
+
+    log_success "Configuração do serviço de inicialização concluída"
+
+    # Display summary
+    echo
+    log_info "📋 Serviço de inicialização configurado:"
+    log_info "   • Serviço: kiosk-start.service"
+}
+
 configure_services() {
     local step="services_config"
     local last_step=$(get_last_state)

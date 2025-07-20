@@ -189,6 +189,42 @@ remove_kiosk_services() {
     else
         log_info "⚡ Arquivo do serviço splash não encontrado"
     fi
+
+
+    # Stop and disable splash service
+    if systemctl is-active --quiet kiosk-start.service 2>/dev/null; then
+        log_info "Parando serviço kiosk-start..."
+        if systemctl stop kiosk-start.service; then
+            log_success "✅ Serviço kiosk-start parado"
+        else
+            log_warn "⚠️  Falha ao parar serviço kiosk-start"
+        fi
+    else
+        log_info "⚡ Serviço kiosk-start já está parado"
+    fi
+
+    if systemctl is-enabled --quiet kiosk-start.service 2>/dev/null; then
+        log_info "Desabilitando serviço kiosk-start..."
+        if systemctl disable kiosk-start.service; then
+            log_success "✅ Serviço kiosk-start desabilitado"
+        else
+            log_warn "⚠️  Falha ao desabilitar serviço kiosk-start"
+        fi
+    else
+        log_info "⚡ Serviço kiosk-start já está desabilitado"
+    fi
+    
+    # Remove service files
+    if [[ -f "$KIOSK_START_SERVICE_PATH" ]]; then
+        log_info "Removendo arquivo do serviço kiosk-start..."
+        if rm -f "$KIOSK_START_SERVICE_PATH"; then
+            log_success "✅ Arquivo do serviço removido: $KIOSK_START_SERVICE_PATH"
+        else
+            log_error "❌ Falha ao remover arquivo do serviço: $KIOSK_START_SERVICE_PATH"
+        fi
+    else
+        log_info "⚡ Arquivo do serviço kiosk-start não encontrado"
+    fi
     
     # Reload systemd to update changes
     log_info "Recarregando configurações do systemd..."
