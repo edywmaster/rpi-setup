@@ -14,14 +14,13 @@ Este documento define a estrutura padrão de diretórios do sistema kiosk que **
 ├── server/                          # KIOSK_SERVER_DIR (Servidor Node.js)
 │   ├── print.js                     # Servidor de impressão
 │   ├── package.json                 # Dependências Node.js
-│   ├── .env                         # Configurações do servidor
-│   └── files/                       # Arquivos PDF temporários
+│   └── .env                         # Configurações do servidor
 ├── utils/                           # KIOSK_UTILS_DIR (Utilitários Python)
 │   └── printer.py                   # Script de impressão CUPS
 ├── templates/                       # KIOSK_TEMPLATES_DIR (Templates visuais)
 │   ├── splash.jpg                   # Splash screen base
 │   └── splash_version.jpg           # Splash screen com versão
-├── tmp/                             # KIOSK_TEMP_DIR (Arquivos temporários)
+├── tmp/                             # KIOSK_TEMP_DIR (Arquivos temporários e PDFs)
 └── kiosk.conf                       # KIOSK_CONFIG_FILE (Configuração principal)
 ```
 
@@ -58,7 +57,6 @@ readonly KIOSK_SERVER_DIR="$KIOSK_BASE_DIR/server"
 readonly KIOSK_UTILS_DIR="$KIOSK_BASE_DIR/utils"
 readonly KIOSK_TEMPLATES_DIR="$KIOSK_BASE_DIR/templates"
 readonly KIOSK_TEMP_DIR="$KIOSK_BASE_DIR/tmp"
-readonly KIOSK_SERVER_FILES_DIR="$KIOSK_SERVER_DIR/files"
 ```
 
 ## 📂 Directory Creation Process
@@ -86,9 +84,8 @@ readonly KIOSK_SERVER_FILES_DIR="$KIOSK_SERVER_DIR/files"
    done
    ```
 
-3. **Server Subdirectories**:
+3. **Server and Temp Directories**:
    ```bash
-   mkdir -p "$KIOSK_SERVER_DIR/files"
    mkdir -p "$KIOSK_TEMP_DIR"
    ```
 
@@ -121,7 +118,6 @@ local directories_to_remove=(
   - `print.js` - Main server application
   - `package.json` - Node.js dependencies
   - `.env` - Environment configuration
-  - `files/` - Temporary PDF downloads
 
 ### `/opt/kiosk/utils/`
 
@@ -140,8 +136,11 @@ local directories_to_remove=(
 
 ### `/opt/kiosk/tmp/`
 
-- **Purpose**: Temporary files and cache
-- **Contents**: Runtime temporary files
+- **Purpose**: Temporary files and PDF downloads
+- **Contents**:
+  - Runtime temporary files
+  - Downloaded PDF files for printing
+  - Print queue temporary storage
 - **Note**: Different from `/tmp/kiosk-badges` (legacy)
 
 ## 🔄 System Integration Files

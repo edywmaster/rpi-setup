@@ -77,22 +77,22 @@ else
     log_error "❌ KIOSK_TEMP_DIR inconsistente: setup='$setup_temp_dir' vs uninstall='$uninstall_temp_dir'"
 fi
 
-# Test 2: Check if uninstall includes KIOSK_SERVER_FILES_DIR
+# Test 2: Check if uninstall no longer references KIOSK_SERVER_FILES_DIR (deprecated)
 run_test
-log_info "📝 Teste 2: Verificando diretório de arquivos do servidor..."
-if grep -q "KIOSK_SERVER_FILES_DIR" "$UNINSTALL_SCRIPT"; then
-    log_success "✅ KIOSK_SERVER_FILES_DIR definido no uninstall"
+log_info "📝 Teste 2: Verificando que KIOSK_SERVER_FILES_DIR foi removido..."
+if ! grep -q "KIOSK_SERVER_FILES_DIR" "$UNINSTALL_SCRIPT"; then
+    log_success "✅ KIOSK_SERVER_FILES_DIR removido do uninstall (correto)"
 else
-    log_error "❌ KIOSK_SERVER_FILES_DIR não encontrado no uninstall"
+    log_error "❌ KIOSK_SERVER_FILES_DIR ainda presente no uninstall (deve ser removido)"
 fi
 
-# Test 3: Check if setup creates $KIOSK_SERVER_DIR/files
+# Test 3: Check if setup no longer creates $KIOSK_SERVER_DIR/files
 run_test
-log_info "📝 Teste 3: Verificando se setup cria diretório files..."
-if grep -q "mkdir.*files" "$SETUP_SCRIPT"; then
-    log_success "✅ Setup cria diretório files"
+log_info "📝 Teste 3: Verificando que setup não cria mais diretório files..."
+if ! grep -q "mkdir.*files" "$SETUP_SCRIPT"; then
+    log_success "✅ Setup não cria mais diretório files (correto)"
 else
-    log_error "❌ Setup não cria diretório files"
+    log_error "❌ Setup ainda cria diretório files (deve usar tmp)"
 fi
 
 # Test 4: Check if uninstall cleans temporary PDF files

@@ -177,7 +177,7 @@ app.get("/badge/:id", async (req, res, next) => {
   }
 
   const filename = `badge_${ID}_${Date.now()}.pdf`
-  const filePath = path.join(__dirname, "files", filename)
+  const filePath = path.join(__dirname, "../tmp", filename)
   const fileApiUrl = `${API_URL}/app/totem/badge/${ID}`
 
   try {
@@ -236,7 +236,7 @@ app.post("/test-print", async (req, res, next) => {
 
 // Rota para listar arquivos na fila de impressão
 app.get("/queue", (req, res) => {
-  const filesDir = path.join(__dirname, "files")
+  const filesDir = path.join(__dirname, "../tmp")
 
   if (!fs.existsSync(filesDir)) {
     return res.json({ queue: [], count: 0 })

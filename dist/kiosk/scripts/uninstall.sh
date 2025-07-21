@@ -51,7 +51,6 @@ readonly SPLASH_VERSION="$KIOSK_TEMPLATES_DIR/splash_version.jpg"
 
 # Print server directories and files
 readonly KIOSK_TEMP_DIR="$KIOSK_BASE_DIR/tmp"
-readonly KIOSK_SERVER_FILES_DIR="$KIOSK_SERVER_DIR/files"
 readonly PRINT_SERVER_LOG="/var/log/kiosk-print-server.log"
 readonly PRINTER_SCRIPT_LOG="/var/log/kiosk-printer.log"
 

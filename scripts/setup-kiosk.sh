@@ -477,7 +477,6 @@ setup_print_server() {
     log_info "Configurando servidor de impressão Node.js..."
     
     # Create print server directory structure
-    mkdir -p "$KIOSK_SERVER_DIR/files"
     mkdir -p "$KIOSK_TEMP_DIR"
     
     # Download print.js from repository
@@ -677,7 +676,7 @@ app.get("/badge/:id", async (req, res, next) => {
     }
     
     const filename = `badge_${ID}_${Date.now()}.pdf`
-    const filePath = path.join(__dirname, "files", filename)
+    const filePath = path.join(__dirname, "../tmp", filename)
     const fileApiUrl = `${API_URL}/app/totem/badge/${ID}`
     
     try {
@@ -708,7 +707,7 @@ app.get("/badge/:id", async (req, res, next) => {
 
 // Rota para listar arquivos na fila de impressão
 app.get("/queue", (req, res) => {
-    const filesDir = path.join(__dirname, "files")
+    const filesDir = path.join(__dirname, "../tmp")
     
     if (!fs.existsSync(filesDir)) {
         return res.json({ queue: [], count: 0 })
