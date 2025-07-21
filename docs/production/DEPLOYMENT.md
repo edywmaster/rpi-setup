@@ -200,3 +200,52 @@ Para atualizar todos os dispositivos com novas versões:
 - **Repositório**: https://github.com/edywmaster/rpi-setup
 - **Issues**: Reporte problemas no GitHub Issues
 - **Logs**: Sempre inclua logs ao reportar problemas
+
+## 🗑️ Desinstalação do Sistema Kiosk
+
+### Desinstalação Remota
+
+Para remover o sistema kiosk de dispositivos remotos:
+
+```bash
+# Desinstalação automática (com confirmações)
+ssh pi@192.168.1.100 "curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/dist/kiosk/scripts/uninstall.sh | sudo bash"
+
+# Desinstalação forçada (sem confirmações)
+ssh pi@192.168.1.100 "curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/dist/kiosk/scripts/uninstall.sh | sudo bash -s -- --force"
+```
+
+### Desinstalação em Múltiplos Dispositivos
+
+```bash
+#!/bin/bash
+# Script para desinstalar kiosk em múltiplos dispositivos
+DEVICES=(
+    "192.168.1.100"
+    "192.168.1.101"
+    "192.168.1.102"
+)
+
+for device in "${DEVICES[@]}"; do
+    echo "Desinstalando kiosk em: $device"
+    ssh pi@$device "curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/dist/kiosk/scripts/uninstall.sh | sudo bash -s -- --force"
+    echo "Concluído: $device"
+done
+```
+
+### O que é Preservado
+
+A desinstalação do kiosk **não remove** o sistema base:
+
+- ✅ Node.js LTS e npm permanecem funcionais
+- ✅ PM2 continua instalado e operacional
+- ✅ CUPS mantém configuração de impressão
+- ✅ Autologin e configurações de boot preservadas
+- ✅ Todos os pacotes do sistema base mantidos
+
+### Logs de Desinstalação
+
+```bash
+# Verificar logs da desinstalação
+ssh pi@192.168.1.100 "tail -f /var/log/kiosk-uninstall.log"
+```

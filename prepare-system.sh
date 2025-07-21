@@ -5,7 +5,7 @@
 # =============================================================================
 # Purpose: Initial system update and essential package installation
 # Target: Raspberry Pi OS Lite (Debian 12 "bookworm")
-# Version: 1.0.9
+# Version: 1.2.0
 # Compatibility: Raspberry Pi 4B (portable to other models)
 # 
 # Execution methods:

@@ -76,6 +76,26 @@ sudo journalctl -u kiosk-start.service -f
 sudo ./tests/test-kiosk-start.sh
 ```
 
+### Desinstalação do Sistema Kiosk
+
+Para remover completamente o sistema kiosk (mantendo o sistema base):
+
+```bash
+# Desinstalação automática
+curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/dist/kiosk/scripts/uninstall.sh | sudo bash
+
+# Ou modo forçado (sem confirmações)
+curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/dist/kiosk/scripts/uninstall.sh | sudo bash -s -- --force
+```
+
+**O que é removido na desinstalação:**
+
+- Diretórios `/opt/kiosk/` e conteúdo
+- Serviços systemd relacionados ao kiosk
+- Configurações específicas do kiosk
+- Logs e arquivos de estado do kiosk
+- **Preserva**: Sistema base (Node.js, PM2, CUPS)
+
 ## 🎯 Compatibilidade
 
 - **Sistema**: Raspberry Pi OS Lite (Debian 12 "bookworm")

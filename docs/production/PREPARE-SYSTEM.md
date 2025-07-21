@@ -6,7 +6,13 @@ Script de preparação inicial para Raspberry Pi OS Lite que automatiza:
 
 - Atualização completa do sistema
 - Instalação de pacotes essenciais para sistemas kiosk/display
+- **Node.js LTS**: Instalação e configuração global
+- **PM2**: Gerenciador de processos para aplicações Node.js
+- **CUPS**: Sistema de impressão com interface web
+- **Autologin**: Configuração automática para usuário 'pi'
+- **Boot otimizado**: Configurações para sistemas kiosk/display
 - Validações de ambiente e conectividade
+- Sistema de recuperação após interrupções
 - Logging abrangente de todas as operações
 
 ## Pacotes Instalados
@@ -39,6 +45,22 @@ O script instala os seguintes pacotes essenciais:
 - `libgbm-dev` - Gerenciador de buffer gráfico
 - `libasound2` - Biblioteca de som ALSA
 - `build-essential` - Ferramentas de compilação
+
+### Sistemas Avançados (v1.2.0)
+
+- **Node.js LTS (v22.13.1)** - Ambiente JavaScript no servidor
+  - Instalação global com npm e npx
+  - Detecção automática de arquitetura (ARM64, ARMv7, x64)
+  - Configuração de permissões globais
+- **PM2** - Gerenciador de processos Node.js
+  - Instalação global para todos os usuários
+  - Configuração para usuário 'pi'
+  - Comandos de processo management
+- **CUPS** - Sistema de impressão
+  - Interface web em http://ip:631
+  - Acesso remoto configurado
+  - Usuário 'pi' adicionado ao grupo lpadmin
+  - Discovery automático desabilitado para segurança
 
 ## Como Usar
 
@@ -317,14 +339,82 @@ sudo apt-get install nome-do-pacote
 apt-cache depends nome-do-pacote
 ```
 
+## Verificação Pós-Instalação
+
+### Verificar Node.js e npm
+
+```bash
+# Verificar versão do Node.js
+node --version
+# Saída esperada: v22.13.1
+
+# Verificar npm
+npm --version
+
+# Verificar npx
+npx --version
+
+# Testar instalação global
+npm list -g --depth=0
+```
+
+### Verificar PM2
+
+```bash
+# Verificar versão do PM2
+pm2 --version
+
+# Verificar status (deve estar vazio inicialmente)
+pm2 status
+
+# Verificar se está acessível globalmente
+which pm2
+# Saída esperada: /usr/bin/pm2
+```
+
+### Verificar CUPS
+
+```bash
+# Verificar status do serviço
+sudo systemctl status cups
+
+# Verificar se usuário pi está no grupo lpadmin
+groups pi | grep lpadmin
+
+# Testar interface web (substituir por IP real)
+curl -I http://localhost:631
+```
+
+### Verificar Autologin
+
+```bash
+# Verificar configuração do serviço
+sudo systemctl status getty@tty1.service
+
+# Verificar arquivo de configuração
+cat /etc/systemd/system/getty@tty1.service.d/override.conf
+```
+
+### Verificar Configurações de Boot
+
+```bash
+# Verificar config.txt
+grep -E "disable_splash|boot_delay_ms|disable_overscan" /boot/firmware/config.txt
+
+# Verificar cmdline.txt
+cat /boot/firmware/cmdline.txt | grep -o "quiet\|splash\|plymouth"
+```
+
 ## Próximos Passos
 
 Após a execução bem-sucedida, você pode:
 
-1. Configurar serviços específicos (SSH, firewall, etc.)
-2. Instalar software adicional conforme necessário
-3. Configurar ambiente gráfico para aplicações kiosk
-4. Implementar scripts de monitoramento
+1. **Instalar Sistema Kiosk**: Execute `setup-kiosk.sh` para interface touchscreen
+2. **Configurar aplicações Node.js**: Use PM2 para gerenciar processos
+3. **Configurar impressoras**: Acesse http://ip:631 para adicionar impressoras
+4. **Desenvolver aplicações**: Use Node.js/npm para projetos personalizados
+5. Configurar serviços específicos (SSH, firewall, etc.)
+6. Implementar scripts de monitoramento
 
 ## Compatibilidade
 

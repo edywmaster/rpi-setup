@@ -33,6 +33,10 @@ Documentação especializada para desenvolvimento assistido por IA:
 - **[deploy-multiple.sh](../scripts/deploy-multiple.sh)** - Automação para múltiplos dispositivos
 - **[setup-kiosk.sh](../scripts/setup-kiosk.sh)** - Setup completo do sistema kiosk
 
+### 🗑️ Scripts de Desinstalação (`dist/kiosk/scripts/`)
+
+- **[uninstall.sh](../dist/kiosk/scripts/uninstall.sh)** - Remoção segura do sistema kiosk
+
 ### 🧪 Testes (`tests/`)
 
 Scripts de validação e teste do projeto:

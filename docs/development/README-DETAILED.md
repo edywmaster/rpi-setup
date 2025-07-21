@@ -26,7 +26,7 @@ Script de preparação inicial do sistema que automatiza:
 - Validações de ambiente e conectividade
 - Logging abrangente de todas as operações
 
-**Versão atual**: v1.0.1 - Corrigido para execução via `curl | bash`
+**Versão atual**: v1.2.0 - Sistema completo com Node.js LTS, PM2, CUPS e sistema kiosk
 
 ## 🔧 Execução Rápida (Recomendado)
 
