@@ -35,6 +35,7 @@ readonly KIOSK_SCRIPTS_DIR="$KIOSK_BASE_DIR/scripts"
 readonly KIOSK_SERVER_DIR="$KIOSK_BASE_DIR/server"
 readonly KIOSK_UTILS_DIR="$KIOSK_BASE_DIR/utils"
 readonly KIOSK_TEMPLATES_DIR="$KIOSK_BASE_DIR/templates"
+readonly KIOSK_TEMP_DIR="$KIOSK_BASE_DIR/tmp"
 
 # Source structure for copying files
 readonly DIST_KIOSK_DIR="https://raw.githubusercontent.com/edywmaster/rpi-setup/main/dist/kiosk"
@@ -367,11 +368,12 @@ configure_kiosk_variables() {
     
     # Default configuration values
     local KIOSK_VERSION="$prepare_version"
-    local APP_MODE="REDE"  # REDE or WEB
-    local APP_URL="http://localhost:3000"
-    local APP_API_URL="https://app.ticketbay.com.br/api/v1"
-    local PRINT_PORT="50001"
-    
+    local KIOSK_APP_MODE="REDE"  # REDE or WEB
+    local KIOSK_APP_URL="http://localhost:3000"
+    local KIOSK_APP_API="https://app.ticketbay.com.br/api/v1"
+    local KIOSK_PRINT_HOST="localhost"
+    local KIOSK_PRINT_PORT="50001"
+
     # Create kiosk configuration file
     log_info "Criando arquivo de configuração do kiosk..."
     cat > "$KIOSK_CONFIG_FILE" << EOF
@@ -379,27 +381,29 @@ configure_kiosk_variables() {
 # Generated on $(date)
 
 # System Information
-KIOSK_VERSION_CONFIG="$KIOSK_VERSION"
+KIOSK_VERSION="$KIOSK_VERSION"
 KIOSK_SETUP_DATE="$(date '+%Y-%m-%d %H:%M:%S')"
 
 # Application Configuration
-APP_MODE_CONFIG="$APP_MODE"
-APP_URL_CONFIG="$APP_URL"
-APP_API_URL_CONFIG="$APP_API_URL"
-PRINT_PORT_CONFIG="$PRINT_PORT"
+KIOSK_APP_MODE="$KIOSK_APP_MODE"
+KIOSK_APP_URL="$KIOSK_APP_URL"
+KIOSK_APP_API="$KIOSK_APP_API"
+
 
 # Print Server Configuration
-PRINT_SERVER_HOST="localhost"
-PRINT_SERVER_PORT="$PRINT_PORT"
-PRINT_SERVER_URL="http://localhost:$PRINT_PORT"
+KIOSK_PRINT_PORT="$KIOSK_PRINT_PORT"
+KIOSK_PRINT_URL="http://$KIOSK_PRINT_HOST:$KIOSK_PRINT_PORT"
+KIOSK_PRINT_SERVER="$KIOSK_PRINT_SERVER/print.js"
+KIOSK_PRINT_SCRIPT="$KIOSK_PRINT_SCRIPT/print.py"
+KIOSK_PRINT_TEMP="$KIOSK_TEMP_DIR"
 
-# PDF Processing
-PDF_DOWNLOAD_DIR="/tmp/kiosk-badges"
-PDF_PRINT_SCRIPT="$KIOSK_SCRIPTS_DIR/print-badge.py"
-
-# Hardware Configuration
-DISPLAY_DEVICE="/dev/fb0"
-TOUCHSCREEN_DEVICE="/dev/input/touchscreen"
+# Directories
+KIOSK_BASE_DIR="$KIOSK_BASE_DIR"
+KIOSK_SCRIPTS_DIR="$KIOSK_SCRIPTS_DIR"
+KIOSK_SERVER_DIR="$KIOSK_SERVER_DIR"
+KIOSK_UTILS_DIR="$KIOSK_UTILS_DIR"
+KIOSK_TEMPLATES_DIR="$KIOSK_TEMPLATES_DIR"
+KIOSK_TEMP_DIR="$KIOSK_TEMP_DIR"
 EOF
     
     if [[ -f "$KIOSK_CONFIG_FILE" ]]; then
@@ -414,11 +418,19 @@ EOF
     
     local env_vars=(
         "KIOSK_VERSION=\"$KIOSK_VERSION\""
-        "APP_MODE=\"$APP_MODE\""
-        "APP_URL=\"$APP_URL\""
-        "APP_API_URL=\"$APP_API_URL\""
-        "PRINT_PORT=\"$PRINT_PORT\""
-        "KIOSK_BASE_DIR=\"$KIOSK_BASE_DIR\""
+        "KIOSK_APP_MODE=\"$KIOSK_APP_MODE\""
+        "KIOSK_APP_URL=\"$KIOSK_APP_URL\""
+        "KIOSK_APP_API=\"$KIOSK_APP_API\""
+        "KIOSK_PRINT_PORT=\"$KIOSK_PRINT_PORT\""
+        "KIOSK_PRINT_HOST=\"$KIOSK_PRINT_HOST\""
+        "KIOSK_PRINT_URL=\"http://$KIOSK_PRINT_HOST:$KIOSK_PRINT_PORT\""
+        "KIOSK_PRINT_SERVER=\"$KIOSK_SERVER_DIR/print.js\""
+        "KIOSK_PRINT_SCRIPT=\"$KIOSK_UTILS_DIR/print.py\""
+        "KIOSK_PRINT_TEMP=\"$KIOSK_TEMP_DIR\""
+        "KIOSK_SCRIPTS_DIR=\"$KIOSK_SCRIPTS_DIR\""
+        "KIOSK_SERVER_DIR=\"$KIOSK_SERVER_DIR\""
+        "KIOSK_UTILS_DIR=\"$KIOSK_UTILS_DIR\""
+        "KIOSK_TEMPLATES_DIR=\"$KIOSK_TEMPLATES_DIR\""
     )
     
     for var in "${env_vars[@]}"; do
