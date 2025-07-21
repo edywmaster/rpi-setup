@@ -57,7 +57,8 @@ curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/scripts/s
 **Funcionalidades do Kiosk:**
 
 - Interface touchscreen para ReactJS
-- Servidor de impressão local (Node.js + PM2)
+- **Servidor de impressão Node.js**: API completa para impressão de badges (porta 50001)
+- **Script Python**: Interface com CUPS para impressão otimizada
 - Splash screen personalizado no boot
 - **Serviço Kiosk Start**: Inicialização automática com "Hello World!" e monitoramento
 - Estrutura organizada em `/opt/kiosk/`
@@ -66,14 +67,27 @@ curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/scripts/s
 **Comandos úteis do Kiosk:**
 
 ```bash
-# Verificar status do serviço
+# Verificar status dos serviços
 sudo systemctl status kiosk-start.service
+sudo systemctl status kiosk-print-server.service
 
 # Ver logs em tempo real
 sudo journalctl -u kiosk-start.service -f
+sudo journalctl -u kiosk-print-server.service -f
 
 # Testar funcionamento
 sudo ./tests/test-kiosk-start.sh
+sudo ./tests/test-print-server.sh
+
+# Testar servidor de impressão
+curl http://localhost:50001/health
+curl http://localhost:50001/printers
+
+# Ver documentação completa do servidor de impressão
+cat docs/production/PRINT-SERVER.md
+
+# Executar exemplos de uso
+./docs/production/PRINT-SERVER-EXAMPLES.sh
 ```
 
 ### Desinstalação do Sistema Kiosk

@@ -66,6 +66,7 @@ readonly INSTALLATION_STEPS=(
     "validation"
     "directory_setup"
     "configuration"
+    "print_server"
     "splash_setup"
     "startup_service"
     "services_config"
@@ -461,6 +462,630 @@ EOF
     log_info "   • Diretório base: $KIOSK_BASE_DIR"
 }
 
+setup_print_server() {
+    local step="print_server"
+    local last_step=$(get_last_state)
+    
+    if should_skip_step "$step" "$last_step"; then
+        log_info "⏭️  Pulando configuração do servidor de impressão (já executada)"
+        return 0
+    fi
+    
+    print_header "CONFIGURANDO SERVIDOR DE IMPRESSÃO NODE.JS"
+    save_state "$step"
+    
+    log_info "Configurando servidor de impressão Node.js..."
+    
+    # Create print server directory structure
+    mkdir -p "$KIOSK_SERVER_DIR/files"
+    mkdir -p "$KIOSK_TEMP_DIR"
+    
+    # Download print.js from repository
+    log_info "Baixando servidor de impressão (print.js)..."
+    local print_js_url="$DIST_KIOSK_DIR/server/print.js"
+    local print_js_path="$KIOSK_SERVER_DIR/print.js"
+    
+    if command -v wget >/dev/null 2>&1; then
+        wget -q -O "$print_js_path" "$print_js_url" 2>/dev/null || {
+            log_warn "⚠️  Não foi possível baixar print.js do repositório, criando versão local"
+            create_local_print_server
+        }
+    elif command -v curl >/dev/null 2>&1; then
+        curl -s -o "$print_js_path" "$print_js_url" 2>/dev/null || {
+            log_warn "⚠️  Não foi possível baixar print.js do repositório, criando versão local"
+            create_local_print_server
+        }
+    else
+        log_warn "⚠️  wget ou curl não disponível, criando versão local do print.js"
+        create_local_print_server
+    fi
+    
+    # Download printer.py script
+    log_info "Baixando script de impressão Python (printer.py)..."
+    local printer_py_url="$DIST_KIOSK_DIR/utils/printer.py"
+    local printer_py_path="$KIOSK_UTILS_DIR/printer.py"
+    
+    if command -v wget >/dev/null 2>&1; then
+        wget -q -O "$printer_py_path" "$printer_py_url" 2>/dev/null || {
+            log_warn "⚠️  Não foi possível baixar printer.py do repositório, criando versão local"
+            create_local_printer_script
+        }
+    elif command -v curl >/dev/null 2>&1; then
+        curl -s -o "$printer_py_path" "$printer_py_url" 2>/dev/null || {
+            log_warn "⚠️  Não foi possível baixar printer.py do repositório, criando versão local"
+            create_local_printer_script
+        }
+    else
+        log_warn "⚠️  wget ou curl não disponível, criando versão local do printer.py"
+        create_local_printer_script
+    fi
+    
+    # Create package.json for the print server
+    log_info "Criando package.json para o servidor de impressão..."
+    create_print_server_package_json
+    
+    # Install Node.js dependencies
+    log_info "Instalando dependências do servidor de impressão..."
+    install_print_server_dependencies
+    
+    # Create print server service
+    log_info "Criando serviço systemd para o servidor de impressão..."
+    create_print_server_service
+    
+    # Set proper permissions
+    log_info "Configurando permissões dos arquivos..."
+    chmod +x "$printer_py_path" 2>/dev/null || true
+    chmod +x "$print_js_path" 2>/dev/null || true
+    chown -R pi:pi "$KIOSK_SERVER_DIR" "$KIOSK_UTILS_DIR" "$KIOSK_TEMP_DIR" 2>/dev/null || true
+    
+    log_success "✅ Servidor de impressão configurado com sucesso"
+    
+    # Display summary
+    echo
+    log_info "📋 Servidor de impressão configurado:"
+    log_info "   • Arquivo principal: $print_js_path"
+    log_info "   • Script Python: $printer_py_path"
+    log_info "   • Porta: $KIOSK_PRINT_PORT"
+    log_info "   • Serviço: kiosk-print-server.service"
+    log_info "   • URL local: http://localhost:$KIOSK_PRINT_PORT"
+}
+
+create_local_print_server() {
+    log_info "Criando servidor de impressão local..."
+    
+    cat > "$KIOSK_SERVER_DIR/print.js" << 'EOF'
+const express = require("express")
+const dotenv = require("dotenv")
+const fs = require("fs")
+const path = require("path")
+const winston = require("winston")
+const axios = require("axios")
+const { exec } = require("child_process")
+const cors = require("cors")
+
+const app = express()
+
+// Load environment variables
+const devMode = process.env.NODE_ENV === "development"
+const envFile = devMode ? ".env.local" : ".env"
+dotenv.config({ path: envFile })
+
+const PORT = process.env.KIOSK_PRINT_PORT || process.env.PORT || 50001
+const API_URL = process.env.KIOSK_APP_API || process.env.API_URL
+
+// Configure logging
+const logger = winston.createLogger({
+    level: 'info',
+    format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.json()
+    ),
+    transports: [
+        new winston.transports.File({ filename: '/var/log/kiosk-print-server.log' }),
+        new winston.transports.Console()
+    ]
+});
+
+// Função para executar o script Python
+function printPDF(filePath) {
+    return new Promise((resolve, reject) => {
+        const pythonScript = path.resolve(__dirname, "../utils/printer.py")
+        const command = `python3 ${pythonScript} "${filePath}"`
+        
+        logger.info(`Executando comando de impressão: ${command}`)
+        
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                logger.error(`Erro ao imprimir: ${error.message}`)
+                return reject(new Error("Erro ao imprimir o arquivo PDF."))
+            }
+            if (stderr) {
+                logger.error(`Stderr da impressão: ${stderr}`)
+                return reject(new Error(stderr))
+            }
+            
+            logger.info(`Impressão concluída: ${stdout}`)
+            resolve(stdout)
+        })
+    })
+}
+
+// Função para baixar um arquivo PDF
+async function downloadPDF(url, outputPath) {
+    try {
+        logger.info(`Baixando PDF de: ${url}`)
+        
+        const response = await axios({ 
+            method: "GET", 
+            url, 
+            responseType: "stream",
+            timeout: 30000 // 30 seconds timeout
+        })
+        
+        const fileDir = path.dirname(outputPath)
+        if (!fs.existsSync(fileDir)) {
+            fs.mkdirSync(fileDir, { recursive: true })
+        }
+        
+        const writer = fs.createWriteStream(outputPath)
+        response.data.pipe(writer)
+        
+        return new Promise((resolve, reject) => {
+            writer.on("finish", () => {
+                logger.info(`PDF baixado com sucesso: ${outputPath}`)
+                resolve()
+            })
+            writer.on("error", (error) => {
+                logger.error(`Erro ao salvar PDF: ${error.message}`)
+                reject(error)
+            })
+        })
+    } catch (error) {
+        logger.error(`Erro ao baixar PDF: ${error.message}`)
+        throw new Error("Erro ao baixar o PDF.")
+    }
+}
+
+// Middleware
+app.use(cors({
+    origin: "*",
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+}))
+
+app.use(express.json())
+
+// Health check endpoint
+app.get("/health", (req, res) => {
+    res.json({ 
+        status: "ok", 
+        service: "kiosk-print-server",
+        version: "1.0.0",
+        timestamp: new Date().toISOString()
+    })
+})
+
+// Rota para baixar e imprimir um arquivo PDF
+app.get("/badge/:id", async (req, res, next) => {
+    const ID = parseInt(req.params.id, 10)
+    
+    logger.info(`Requisição de impressão recebida para ID: ${ID}`)
+    
+    if (isNaN(ID) || ID <= 0) {
+        logger.warn(`ID inválido recebido: ${req.params.id}`)
+        return res.status(400).json({ status: "error", message: "ID inválido." })
+    }
+    
+    const filename = `badge_${ID}_${Date.now()}.pdf`
+    const filePath = path.join(__dirname, "files", filename)
+    const fileApiUrl = `${API_URL}/app/totem/badge/${ID}`
+    
+    try {
+        await downloadPDF(fileApiUrl, filePath)
+        await printPDF(filePath)
+        
+        // Clean up downloaded file after printing
+        setTimeout(() => {
+            fs.unlink(filePath, (err) => {
+                if (err) logger.warn(`Erro ao remover arquivo: ${err.message}`)
+                else logger.info(`Arquivo temporário removido: ${filePath}`)
+            })
+        }, 5000) // Remove after 5 seconds
+        
+        logger.info(`Impressão concluída com sucesso para ID: ${ID}`)
+        res.json({ 
+            status: "success", 
+            message: "Badge impresso com sucesso.", 
+            id: ID,
+            file: filename,
+            timestamp: new Date().toISOString()
+        })
+    } catch (error) {
+        logger.error(`Erro na impressão para ID ${ID}: ${error.message}`)
+        next(error)
+    }
+})
+
+// Rota para listar arquivos na fila de impressão
+app.get("/queue", (req, res) => {
+    const filesDir = path.join(__dirname, "files")
+    
+    if (!fs.existsSync(filesDir)) {
+        return res.json({ queue: [], count: 0 })
+    }
+    
+    fs.readdir(filesDir, (err, files) => {
+        if (err) {
+            logger.error(`Erro ao listar fila: ${err.message}`)
+            return res.status(500).json({ status: "error", message: "Erro ao acessar fila de impressão" })
+        }
+        
+        const pdfFiles = files.filter(file => file.endsWith('.pdf'))
+        res.json({ queue: pdfFiles, count: pdfFiles.length })
+    })
+})
+
+// Error handler
+app.use((err, req, res, next) => {
+    logger.error(`Erro interno: ${err.message}`)
+    res.status(500).json({ 
+        status: "error", 
+        message: "Erro interno no servidor.",
+        timestamp: new Date().toISOString()
+    })
+})
+
+// Start server
+app.listen(PORT, "0.0.0.0", () => {
+    logger.info(`Servidor de impressão rodando${devMode ? " (DEV MODE)" : ""} em http://0.0.0.0:${PORT}`)
+    logger.info(`API URL configurada: ${API_URL}`)
+})
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    logger.info('Servidor de impressão sendo finalizado...')
+    process.exit(0)
+})
+
+process.on('SIGINT', () => {
+    logger.info('Servidor de impressão interrompido pelo usuário')
+    process.exit(0)
+})
+EOF
+    
+    log_success "✅ Arquivo print.js local criado"
+}
+
+create_local_printer_script() {
+    log_info "Criando script de impressão Python local..."
+    
+    cat > "$KIOSK_UTILS_DIR/printer.py" << 'EOF'
+#!/usr/bin/env python3
+"""
+Kiosk Print System - Python Printer Script
+Handles PDF printing via CUPS on Raspberry Pi
+"""
+
+import sys
+import os
+import subprocess
+import logging
+from pathlib import Path
+import argparse
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('/var/log/kiosk-printer.log'),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)
+
+def get_default_printer():
+    """Get the default printer from CUPS"""
+    try:
+        result = subprocess.run(['lpstat', '-d'], capture_output=True, text=True, check=True)
+        output = result.stdout.strip()
+        
+        if 'no system default destination' in output.lower():
+            logger.warning("Nenhuma impressora padrão configurada")
+            return None
+            
+        # Extract printer name from "system default destination: printer_name"
+        if ':' in output:
+            printer_name = output.split(':')[-1].strip()
+            logger.info(f"Impressora padrão encontrada: {printer_name}")
+            return printer_name
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Erro ao obter impressora padrão: {e}")
+        return None
+    
+    return None
+
+def list_available_printers():
+    """List all available printers"""
+    try:
+        result = subprocess.run(['lpstat', '-p'], capture_output=True, text=True, check=True)
+        printers = []
+        
+        for line in result.stdout.split('\n'):
+            if line.startswith('printer '):
+                printer_name = line.split()[1]
+                printers.append(printer_name)
+        
+        logger.info(f"Impressoras disponíveis: {printers}")
+        return printers
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Erro ao listar impressoras: {e}")
+        return []
+
+def print_pdf(file_path, printer_name=None, copies=1):
+    """Print PDF file using CUPS lp command"""
+    
+    # Validate file exists
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Arquivo não encontrado: {file_path}")
+    
+    # Validate file is PDF
+    if not file_path.lower().endswith('.pdf'):
+        raise ValueError("Apenas arquivos PDF são suportados")
+    
+    logger.info(f"Iniciando impressão: {file_path}")
+    
+    # Get printer to use
+    if not printer_name:
+        printer_name = get_default_printer()
+        
+        if not printer_name:
+            # Try to get first available printer
+            available_printers = list_available_printers()
+            if available_printers:
+                printer_name = available_printers[0]
+                logger.info(f"Usando primeira impressora disponível: {printer_name}")
+            else:
+                raise RuntimeError("Nenhuma impressora configurada no sistema")
+    
+    # Build lp command
+    cmd = ['lp']
+    
+    if printer_name:
+        cmd.extend(['-d', printer_name])
+    
+    if copies > 1:
+        cmd.extend(['-n', str(copies)])
+    
+    # Add print options for better PDF handling
+    cmd.extend([
+        '-o', 'fit-to-page',           # Scale to fit page
+        '-o', 'sides=one-sided',       # Single-sided printing
+        '-o', 'media=A4',              # Paper size
+        '-o', 'orientation-requested=3' # Portrait orientation
+    ])
+    
+    cmd.append(file_path)
+    
+    try:
+        logger.info(f"Executando comando: {' '.join(cmd)}")
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        
+        # lp returns job ID on success
+        job_info = result.stdout.strip()
+        logger.info(f"Impressão enviada com sucesso: {job_info}")
+        
+        return {
+            'status': 'success',
+            'job_info': job_info,
+            'printer': printer_name,
+            'file': file_path,
+            'copies': copies
+        }
+        
+    except subprocess.CalledProcessError as e:
+        error_msg = f"Erro na impressão: {e.stderr.strip() if e.stderr else str(e)}"
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
+
+def check_printer_status(printer_name=None):
+    """Check printer status"""
+    try:
+        if printer_name:
+            cmd = ['lpstat', '-p', printer_name]
+        else:
+            cmd = ['lpstat', '-p']
+            
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        
+        status_info = result.stdout.strip()
+        logger.info(f"Status da impressora: {status_info}")
+        
+        return status_info
+        
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Erro ao verificar status: {e}")
+        return None
+
+def main():
+    parser = argparse.ArgumentParser(description='Kiosk Print System - PDF Printer')
+    parser.add_argument('file_path', help='Caminho para o arquivo PDF')
+    parser.add_argument('-p', '--printer', help='Nome da impressora (opcional)')
+    parser.add_argument('-c', '--copies', type=int, default=1, help='Número de cópias')
+    parser.add_argument('-s', '--status', action='store_true', help='Verificar status da impressora')
+    parser.add_argument('-l', '--list', action='store_true', help='Listar impressoras disponíveis')
+    
+    args = parser.parse_args()
+    
+    try:
+        if args.list:
+            printers = list_available_printers()
+            if printers:
+                print("Impressoras disponíveis:")
+                for printer in printers:
+                    print(f"  - {printer}")
+            else:
+                print("Nenhuma impressora encontrada")
+            return 0
+        
+        if args.status:
+            status = check_printer_status(args.printer)
+            if status:
+                print(status)
+            return 0
+        
+        # Print the PDF
+        result = print_pdf(args.file_path, args.printer, args.copies)
+        
+        print(f"✅ Impressão concluída:")
+        print(f"   Arquivo: {result['file']}")
+        print(f"   Impressora: {result['printer']}")
+        print(f"   Cópias: {result['copies']}")
+        print(f"   Job: {result['job_info']}")
+        
+        return 0
+        
+    except Exception as e:
+        logger.error(f"Erro: {e}")
+        print(f"❌ Erro: {e}", file=sys.stderr)
+        return 1
+
+if __name__ == "__main__":
+    sys.exit(main())
+EOF
+    
+    log_success "✅ Arquivo printer.py local criado"
+}
+
+create_print_server_package_json() {
+    log_info "Criando package.json..."
+    
+    cat > "$KIOSK_SERVER_DIR/package.json" << 'EOF'
+{
+  "name": "kiosk-print-server",
+  "version": "1.0.0",
+  "description": "Servidor de impressão para sistema kiosk Raspberry Pi",
+  "main": "print.js",
+  "scripts": {
+    "start": "node print.js",
+    "dev": "NODE_ENV=development node print.js",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "kiosk",
+    "print",
+    "raspberry-pi",
+    "pdf",
+    "cups"
+  ],
+  "author": "Kiosk System",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "winston": "^3.11.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+EOF
+    
+    log_success "✅ package.json criado"
+}
+
+install_print_server_dependencies() {
+    log_info "Instalando dependências do Node.js..."
+    
+    cd "$KIOSK_SERVER_DIR"
+    
+    # Install dependencies using npm
+    if npm install --production --silent; then
+        log_success "✅ Dependências instaladas com sucesso"
+    else
+        log_error "❌ Falha ao instalar dependências"
+        return 1
+    fi
+    
+    # Create .env file if it doesn't exist
+    if [[ ! -f "$KIOSK_SERVER_DIR/.env" ]]; then
+        log_info "Criando arquivo .env..."
+        cat > "$KIOSK_SERVER_DIR/.env" << EOF
+# Kiosk Print Server Configuration
+NODE_ENV=production
+KIOSK_PRINT_PORT=50001
+KIOSK_APP_API=https://app.ticketbay.com.br/api/v1
+EOF
+        log_success "✅ Arquivo .env criado"
+    fi
+}
+
+create_print_server_service() {
+    log_info "Criando serviço systemd para o servidor de impressão..."
+    
+    cat > "/etc/systemd/system/kiosk-print-server.service" << EOF
+[Unit]
+Description=Kiosk Print Server
+Documentation=https://github.com/edywmaster/rpi-setup
+After=network.target cups.service
+Wants=cups.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=$KIOSK_SERVER_DIR
+ExecStart=/usr/bin/node print.js
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kiosk-print-server
+
+# Environment variables
+Environment=NODE_ENV=production
+Environment=KIOSK_PRINT_PORT=50001
+Environment=KIOSK_APP_API=https://app.ticketbay.com.br/api/v1
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=$KIOSK_SERVER_DIR $KIOSK_TEMP_DIR /var/log
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    
+    # Reload systemd and enable service
+    if systemctl daemon-reload; then
+        log_success "✅ Systemd recarregado"
+    else
+        log_error "❌ Falha ao recarregar systemd"
+        return 1
+    fi
+    
+    if systemctl enable kiosk-print-server.service; then
+        log_success "✅ Serviço kiosk-print-server habilitado"
+    else
+        log_error "❌ Falha ao habilitar serviço"
+        return 1
+    fi
+    
+    # Start the service
+    if systemctl start kiosk-print-server.service; then
+        log_success "✅ Serviço kiosk-print-server iniciado"
+    else
+        log_warn "⚠️  Falha ao iniciar serviço (será iniciado no próximo boot)"
+    fi
+    
+    log_success "✅ Serviço systemd configurado"
+}
+
 setup_splash_screen() {
     local step="splash_setup"
     local last_step=$(get_last_state)
@@ -753,16 +1378,28 @@ display_completion_summary() {
     log_info "   • Status: $(systemctl is-active kiosk-start.service 2>/dev/null || echo 'inativo')"
     
     echo
-    log_info "📄 Arquivos importantes:"
+    log_info "�️ Servidor de Impressão:"
+    log_info "   • Serviço: kiosk-print-server.service"
+    log_info "   • Porta: $print_port"
+    log_info "   • URL: http://localhost:$print_port"
+    log_info "   • Status: $(systemctl is-active kiosk-print-server.service 2>/dev/null || echo 'inativo')"
+    log_info "   • Health check: http://localhost:$print_port/health"
+    log_info "   • Print endpoint: http://localhost:$print_port/badge/{id}"
+    log_info "   • Script Python: $KIOSK_UTILS_DIR/printer.py"
+    
+    echo
+    log_info "�📄 Arquivos importantes:"
     log_info "   • Configuração: $KIOSK_CONFIG_FILE"
     log_info "   • Log de instalação: $LOG_FILE"
     log_info "   • Variáveis globais: $GLOBAL_ENV_FILE"
+    log_info "   • Log do servidor: /var/log/kiosk-print-server.log"
+    log_info "   • Log do printer: /var/log/kiosk-printer.log"
     
     echo
     log_info "🔄 Próximos passos:"
     log_info "   1. Instalar aplicação ReactJS no diretório apropriado"
-    log_info "   2. Configurar servidor de impressão Node.js"
-    log_info "   3. Configurar scripts Python para impressão"
+    log_info "   2. Configurar impressoras no CUPS (http://$(hostname -I | awk '{print $1}'):631)"
+    log_info "   3. Testar servidor de impressão: curl http://localhost:$print_port/health"
     log_info "   4. Testar integração com touchscreen"
     log_info "   5. Configurar aplicação para iniciar automaticamente"
     
@@ -794,6 +1431,7 @@ main() {
     # Setup process
     setup_kiosk_directories
     configure_kiosk_variables
+    setup_print_server
     setup_splash_screen
     setup_startup_service
     configure_services

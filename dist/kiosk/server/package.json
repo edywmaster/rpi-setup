@@ -1,0 +1,44 @@
+{
+  "name": "kiosk-print-server",
+  "version": "1.0.0",
+  "description": "Servidor de impressão para sistema kiosk Raspberry Pi - Sistema completo de impressão de badges via CUPS",
+  "main": "print.js",
+  "scripts": {
+    "start": "node print.js",
+    "dev": "NODE_ENV=development node print.js",
+    "test": "echo \"Testing print server...\" && curl -f http://localhost:50001/health || exit 1",
+    "install-service": "sudo systemctl enable kiosk-print-server.service && sudo systemctl start kiosk-print-server.service",
+    "logs": "sudo journalctl -u kiosk-print-server.service -f"
+  },
+  "keywords": [
+    "kiosk",
+    "print",
+    "raspberry-pi",
+    "pdf",
+    "cups",
+    "badge",
+    "thermal-printer",
+    "node.js",
+    "express"
+  ],
+  "author": "Kiosk System Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "winston": "^3.11.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/edywmaster/rpi-setup.git"
+  },
+  "config": {
+    "port": 50001,
+    "api_url": "https://app.ticketbay.com.br/api/v1"
+  }
+}

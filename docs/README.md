@@ -26,12 +26,17 @@ Documentação especializada para desenvolvimento assistido por IA:
   - Diretrizes de segurança e validação
   - Fluxo de desenvolvimento e testes
 
-## 📂 Scripts e Testes
+## � Scripts e Ferramentas (`scripts/`)
 
-### 🔧 Scripts (`scripts/`)
-
-- **[deploy-multiple.sh](../scripts/deploy-multiple.sh)** - Automação para múltiplos dispositivos
 - **[setup-kiosk.sh](../scripts/setup-kiosk.sh)** - Setup completo do sistema kiosk
+- **[deploy-multiple.sh](../scripts/deploy-multiple.sh)** - Deploy em múltiplos dispositivos
+
+## 📋 Documentação de Produção (`docs/production/`)
+
+- **[DEPLOYMENT.md](production/DEPLOYMENT.md)** - Guia de implantação em produção
+- **[PREPARE-SYSTEM.md](production/PREPARE-SYSTEM.md)** - Documentação detalhada do prepare-system.sh
+- **[PRINT-SERVER.md](production/PRINT-SERVER.md)** - Documentação do servidor de impressão
+- **[PRINT-SERVER-EXAMPLES.sh](production/PRINT-SERVER-EXAMPLES.sh)** - Exemplos de uso do servidor de impressão
 
 ### 🗑️ Scripts de Desinstalação (`dist/kiosk/scripts/`)
 
@@ -52,6 +57,7 @@ Scripts de validação e teste do projeto:
 - **[test-cups.sh](../tests/test-cups.sh)** - Teste da configuração do CUPS (sistema de impressão)
 - **[test-kiosk-setup.sh](../tests/test-kiosk-setup.sh)** - Teste do script de setup do kiosk
 - **[test-kiosk-integration.sh](../tests/test-kiosk-integration.sh)** - Teste da integração do kiosk no prepare-system.sh
+- **[test-print-server.sh](../tests/test-print-server.sh)** - Teste do servidor de impressão Node.js
 - **[validate-structure.sh](../tests/validate-structure.sh)** - Validação geral da estrutura
 
 ## 🎯 Script Principal
