@@ -66,7 +66,20 @@ Scripts de validação e teste do projeto:
 
 ## 📋 Como Navegar na Documentação
 
-### Para Usuários Finais
+### 📁 Documentação de Desenvolvimento
+
+### Guias Técnicos
+
+- **[Estrutura de Diretórios do Kiosk](development/KIOSK-DIRECTORY-STRUCTURE.md)**: Padrão obrigatório para organização de diretórios do sistema kiosk
+- **[README Detalhado](development/README-DETAILED.md)**: Informações técnicas completas do projeto
+- **[Notas de Versão](development/RELEASE-NOTES.md)**: Histórico de mudanças e correções
+
+### Arquitetura e Padrões
+
+- **[Instruções do Copilot](../.github/copilot-instructions.md)**: Diretrizes de desenvolvimento e padrões de código
+- **[Scripts de Teste](../tests/)**: Ferramentas de validação e qualidade
+
+## 🚀 Para Usuários Finais
 
 1. Comece com o [README principal](../README.md)
 2. Para implantação avançada: [DEPLOYMENT.md](production/DEPLOYMENT.md)
@@ -75,18 +88,20 @@ Scripts de validação e teste do projeto:
 ### Para Desenvolvedores
 
 1. **Entenda a arquitetura** nas [instruções do Copilot](../.github/copilot-instructions.md)
-2. Consulte o [README detalhado](development/README-DETAILED.md) para informações técnicas
-3. Verifique o [histórico de versões](development/RELEASE-NOTES.md) para mudanças
-4. **Valide suas mudanças** com os scripts de teste
+2. **IMPORTANTE**: Siga a [estrutura de diretórios do kiosk](development/KIOSK-DIRECTORY-STRUCTURE.md) para consistência
+3. Consulte o [README detalhado](development/README-DETAILED.md) para informações técnicas
+4. Verifique o [histórico de versões](development/RELEASE-NOTES.md) para mudanças
+5. **Valide suas mudanças** com os scripts de teste
 
 ### Para Contribuidores e IA
 
 1. **OBRIGATÓRIO**: Leia as [instruções do Copilot](../.github/copilot-instructions.md) antes de fazer alterações
-2. Use os [scripts de validação](../tests/) para verificar conformidade:
+2. **CRÍTICO**: Siga a [estrutura de diretórios do kiosk](development/KIOSK-DIRECTORY-STRUCTURE.md) rigorosamente
+3. Use os [scripts de validação](../tests/) para verificar conformidade:
    - `./tests/check-docs-reorganization.sh` - Validação rápida da estrutura
    - `./tests/validate-docs-structure.sh` - Validação completa
-3. Siga os padrões de código e documentação estabelecidos
-4. Teste todas as mudanças antes de committar
+4. Siga os padrões de código e documentação estabelecidos
+5. Teste todas as mudanças antes de committar
 
 ## 🔄 Atualizações
 
@@ -115,6 +130,9 @@ O projeto inclui ferramentas automatizadas para validar a estrutura e organizaç
 # Validação geral da estrutura do projeto
 ./tests/validate-structure.sh
 
+# Validação específica da estrutura de diretórios do kiosk
+./tests/test-uninstall-directories.sh
+
 # Teste de configurações de boot
 ./tests/test-boot-config.sh
 
@@ -135,13 +153,16 @@ O projeto inclui ferramentas automatizadas para validar a estrutura e organizaç
 # 1. Verificar estado atual
 ./tests/check-docs-reorganization.sh
 
-# 2. Fazer suas mudanças...
+# 2. Fazer suas mudanças seguindo a estrutura de diretórios...
 
 # 3. Validar estrutura completa
 ./tests/validate-docs-structure.sh
 
-# 4. Validar integração das instruções
+# 4. Validar estrutura de diretórios do kiosk
+./tests/test-uninstall-directories.sh
+
+# 5. Validar integração das instruções
 ./tests/validate-copilot-integration.sh
 
-# 5. Se tudo estiver OK, committar
+# 6. Se tudo estiver OK, committar
 ```

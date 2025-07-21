@@ -44,10 +44,18 @@ readonly SETUP_LOG_FILE="/var/log/kiosk-setup.log"
 
 # Service files
 readonly SPLASH_SERVICE_PATH="/etc/systemd/system/kiosk-splash.service"
+readonly KIOSK_START_SERVICE_PATH="/etc/systemd/system/kiosk-start.service"
+readonly PRINT_SERVER_SERVICE_PATH="/etc/systemd/system/kiosk-print-server.service"
 readonly SPLASH_IMAGE="$KIOSK_TEMPLATES_DIR/splash.jpg"
 readonly SPLASH_VERSION="$KIOSK_TEMPLATES_DIR/splash_version.jpg"
 
-# Temporary directories
+# Print server directories and files
+readonly KIOSK_TEMP_DIR="$KIOSK_BASE_DIR/tmp"
+readonly KIOSK_SERVER_FILES_DIR="$KIOSK_SERVER_DIR/files"
+readonly PRINT_SERVER_LOG="/var/log/kiosk-print-server.log"
+readonly PRINTER_SCRIPT_LOG="/var/log/kiosk-printer.log"
+
+# Legacy temporary directories (for backward compatibility)
 readonly PDF_DOWNLOAD_DIR="/tmp/kiosk-badges"
 
 # Colors for output
@@ -226,6 +234,41 @@ remove_kiosk_services() {
         log_info "⚡ Arquivo do serviço kiosk-start não encontrado"
     fi
     
+    # Stop and disable print server service
+    if systemctl is-active --quiet kiosk-print-server.service 2>/dev/null; then
+        log_info "Parando serviço kiosk-print-server..."
+        if systemctl stop kiosk-print-server.service; then
+            log_success "✅ Serviço kiosk-print-server parado"
+        else
+            log_warn "⚠️  Falha ao parar serviço kiosk-print-server"
+        fi
+    else
+        log_info "⚡ Serviço kiosk-print-server já está parado"
+    fi
+
+    if systemctl is-enabled --quiet kiosk-print-server.service 2>/dev/null; then
+        log_info "Desabilitando serviço kiosk-print-server..."
+        if systemctl disable kiosk-print-server.service; then
+            log_success "✅ Serviço kiosk-print-server desabilitado"
+        else
+            log_warn "⚠️  Falha ao desabilitar serviço kiosk-print-server"
+        fi
+    else
+        log_info "⚡ Serviço kiosk-print-server já está desabilitado"
+    fi
+    
+    # Remove print server service file
+    if [[ -f "$PRINT_SERVER_SERVICE_PATH" ]]; then
+        log_info "Removendo arquivo do serviço kiosk-print-server..."
+        if rm -f "$PRINT_SERVER_SERVICE_PATH"; then
+            log_success "✅ Arquivo do serviço removido: $PRINT_SERVER_SERVICE_PATH"
+        else
+            log_error "❌ Falha ao remover arquivo do serviço: $PRINT_SERVER_SERVICE_PATH"
+        fi
+    else
+        log_info "⚡ Arquivo do serviço kiosk-print-server não encontrado"
+    fi
+    
     # Reload systemd to update changes
     log_info "Recarregando configurações do systemd..."
     if systemctl daemon-reload; then
@@ -242,12 +285,26 @@ remove_kiosk_directories() {
     
     log_info "Removendo estrutura de diretórios do kiosk..."
     
+    # Clean up print server temporary files first
+    if [[ -d "$KIOSK_SERVER_FILES_DIR" ]]; then
+        log_info "Limpando arquivos temporários do servidor de impressão..."
+        local temp_files=$(find "$KIOSK_SERVER_FILES_DIR" -name "*.pdf" 2>/dev/null | wc -l)
+        if [[ $temp_files -gt 0 ]]; then
+            log_info "Removendo $temp_files arquivo(s) PDF temporário(s)..."
+            rm -f "$KIOSK_SERVER_FILES_DIR"/*.pdf 2>/dev/null || true
+            log_success "✅ Arquivos temporários removidos"
+        else
+            log_info "⚡ Nenhum arquivo temporário encontrado"
+        fi
+    fi
+    
     # List directories to be removed
     local directories_to_remove=(
         "$KIOSK_SCRIPTS_DIR"
         "$KIOSK_SERVER_DIR"
         "$KIOSK_UTILS_DIR"
         "$KIOSK_TEMPLATES_DIR"
+        "$KIOSK_TEMP_DIR"
         "$KIOSK_BASE_DIR"
         "$PDF_DOWNLOAD_DIR"
     )
@@ -319,6 +376,29 @@ remove_setup_status() {
         log_info "⚡ Log de instalação não encontrado"
     fi
     
+    # Remove print server log files
+    if [[ -f "$PRINT_SERVER_LOG" ]]; then
+        log_info "Removendo log do servidor de impressão..."
+        if rm -f "$PRINT_SERVER_LOG"; then
+            log_success "✅ Log do servidor removido: $PRINT_SERVER_LOG"
+        else
+            log_error "❌ Falha ao remover log do servidor: $PRINT_SERVER_LOG"
+        fi
+    else
+        log_info "⚡ Log do servidor de impressão não encontrado"
+    fi
+    
+    if [[ -f "$PRINTER_SCRIPT_LOG" ]]; then
+        log_info "Removendo log do script de impressão..."
+        if rm -f "$PRINTER_SCRIPT_LOG"; then
+            log_success "✅ Log do script removido: $PRINTER_SCRIPT_LOG"
+        else
+            log_error "❌ Falha ao remover log do script: $PRINTER_SCRIPT_LOG"
+        fi
+    else
+        log_info "⚡ Log do script de impressão não encontrado"
+    fi
+    
     log_success "Remoção de status concluída"
 }
 
@@ -330,11 +410,25 @@ remove_environment_variables() {
     # List of environment variables to remove
     local env_vars_to_remove=(
         "KIOSK_VERSION"
+        "KIOSK_APP_MODE"
+        "KIOSK_APP_URL"
+        "KIOSK_APP_API"
+        "KIOSK_PRINT_PORT"
+        "KIOSK_PRINT_HOST"
+        "KIOSK_PRINT_URL"
+        "KIOSK_PRINT_SERVER"
+        "KIOSK_PRINT_SCRIPT"
+        "KIOSK_PRINT_TEMP"
+        "KIOSK_BASE_DIR"
+        "KIOSK_SCRIPTS_DIR"
+        "KIOSK_SERVER_DIR"
+        "KIOSK_UTILS_DIR"
+        "KIOSK_TEMPLATES_DIR"
+        "KIOSK_TEMP_DIR"
         "APP_MODE"
         "APP_URL"
         "APP_API_URL"
         "PRINT_PORT"
-        "KIOSK_BASE_DIR"
     )
     
     # Create backup of environment file
@@ -381,6 +475,86 @@ remove_environment_variables() {
     log_success "Remoção de variáveis de ambiente concluída"
 }
 
+remove_print_server_processes() {
+    print_header "REMOVENDO PROCESSOS DO SERVIDOR DE IMPRESSÃO"
+    
+    log_info "Parando processos relacionados ao servidor de impressão..."
+    
+    # Stop PM2 processes related to print server
+    if command -v pm2 >/dev/null 2>&1; then
+        # Check for PM2 processes with print server names
+        local pm2_processes=(
+            "kiosk-print-server"
+            "print-server"
+            "kiosk-print"
+        )
+        
+        for process_name in "${pm2_processes[@]}"; do
+            if pm2 list 2>/dev/null | grep -q "$process_name"; then
+                log_info "Parando processo PM2: $process_name"
+                if pm2 stop "$process_name" 2>/dev/null; then
+                    log_success "✅ Processo PM2 parado: $process_name"
+                else
+                    log_warn "⚠️  Falha ao parar processo PM2: $process_name"
+                fi
+                
+                if pm2 delete "$process_name" 2>/dev/null; then
+                    log_success "✅ Processo PM2 removido: $process_name"
+                else
+                    log_warn "⚠️  Falha ao remover processo PM2: $process_name"
+                fi
+            fi
+        done
+        
+        # Save PM2 configuration without the removed processes
+        if pm2 save 2>/dev/null; then
+            log_success "✅ Configuração PM2 salva"
+        else
+            log_warn "⚠️  Falha ao salvar configuração PM2"
+        fi
+    else
+        log_info "⚡ PM2 não está instalado"
+    fi
+    
+    # Kill any remaining Node.js processes on print server port
+    local print_port="${KIOSK_PRINT_PORT:-50001}"
+    log_info "Verificando processos na porta $print_port..."
+    
+    local pid=$(lsof -ti:$print_port 2>/dev/null)
+    if [[ -n "$pid" ]]; then
+        log_info "Encontrado processo na porta $print_port (PID: $pid)"
+        if kill -TERM "$pid" 2>/dev/null; then
+            sleep 2
+            if kill -0 "$pid" 2>/dev/null; then
+                log_warn "Processo ainda rodando, forçando encerramento..."
+                kill -KILL "$pid" 2>/dev/null
+            fi
+            log_success "✅ Processo na porta $print_port encerrado"
+        else
+            log_warn "⚠️  Falha ao encerrar processo na porta $print_port"
+        fi
+    else
+        log_info "⚡ Nenhum processo encontrado na porta $print_port"
+    fi
+    
+    # Clean up any remaining print.js processes
+    local print_pids=$(pgrep -f "print.js" 2>/dev/null)
+    if [[ -n "$print_pids" ]]; then
+        log_info "Encerrando processos print.js restantes..."
+        for pid in $print_pids; do
+            if kill -TERM "$pid" 2>/dev/null; then
+                log_success "✅ Processo print.js encerrado (PID: $pid)"
+            else
+                log_warn "⚠️  Falha ao encerrar processo print.js (PID: $pid)"
+            fi
+        done
+    else
+        log_info "⚡ Nenhum processo print.js encontrado"
+    fi
+    
+    log_success "Remoção de processos concluída"
+}
+
 display_uninstall_summary() {
     print_header "DESINSTALAÇÃO CONCLUÍDA"
     
@@ -388,10 +562,12 @@ display_uninstall_summary() {
     echo
     
     log_info "📋 Resumo da desinstalação:"
-    log_info "   • Serviços removidos: kiosk-splash.service"
-    log_info "   • Diretórios removidos: $KIOSK_BASE_DIR"
+    log_info "   • Serviços removidos: kiosk-splash.service, kiosk-start.service, kiosk-print-server.service"
+    log_info "   • Diretórios removidos: $KIOSK_BASE_DIR (incluindo /tmp subdir)"
+    log_info "   • Arquivos temporários removidos: PDFs em $KIOSK_SERVER_DIR/files"
     log_info "   • Arquivos de estado removidos: $STATE_FILE"
     log_info "   • Configurações removidas: $KIOSK_CONFIG_FILE"
+    log_info "   • Logs do servidor removidos: $PRINT_SERVER_LOG, $PRINTER_SCRIPT_LOG"
     log_info "   • Variáveis de ambiente limpas: $GLOBAL_ENV_FILE"
     
     echo
@@ -447,8 +623,10 @@ main() {
         log_warn "⚠️  ATENÇÃO: Esta operação irá remover COMPLETAMENTE o sistema kiosk!"
         log_info "📋 Será removido:"
         log_info "   • Todos os diretórios em $KIOSK_BASE_DIR"
-        log_info "   • Serviços do systemd (kiosk-splash)"
+        log_info "   • Serviços do systemd (kiosk-splash, kiosk-start, kiosk-print-server)"
+        log_info "   • Processos Node.js e PM2 do servidor de impressão"
         log_info "   • Arquivos de configuração e estado"
+        log_info "   • Logs do servidor de impressão"
         log_info "   • Variáveis de ambiente relacionadas"
         echo
         
@@ -463,6 +641,7 @@ main() {
     fi
     
     # Uninstall process
+    remove_print_server_processes
     remove_kiosk_services
     remove_kiosk_directories
     remove_setup_status

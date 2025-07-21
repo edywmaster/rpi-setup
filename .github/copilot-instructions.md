@@ -4,6 +4,37 @@
 
 This is a Bash automation suite for Raspberry Pi OS Lite (Debian 12 "bookworm") targeting Raspberry Pi 4B devices with portability considerations for other models.
 
+## Development Environment
+
+**Important**: All development and testing is performed on **macOS** environment, while the target deployment is **Raspberry Pi OS Lite (Linux)**.
+
+### Development Context
+
+- **Development OS**: macOS (x86_64/ARM64)
+- **Target OS**: Raspberry Pi OS Lite (Debian 12 "bookworm", ARM)
+- **Cross-platform considerations**: Scripts must work on Linux despite being developed on macOS
+
+### Testing Limitations on macOS
+
+- **systemctl commands**: Not available natively (systemd is Linux-specific)
+- **CUPS printing**: Different implementation between macOS and Linux
+- **Hardware-specific features**: GPIO, boot process, splash screens
+- **Service management**: systemd services cannot be tested on macOS
+
+### Testing Strategy
+
+- **Static testing on macOS**: Syntax validation, structure checks, logic verification
+- **Functional testing on Raspberry Pi**: Full installation, services, hardware integration
+- **Cross-platform compatibility**: Ensure scripts work correctly on target Linux environment
+
+### Development Best Practices
+
+- Use `bash -n` for syntax validation on macOS
+- Avoid macOS-specific commands in scripts
+- Test file paths and permissions logic
+- Document Linux-specific requirements clearly
+- Validate script structure and variable consistency
+
 ## Project Structure
 
 ```
@@ -34,6 +65,45 @@ rpi-setup/
 - **Separation**: User-facing vs developer-facing content clearly separated
 
 ## Core Architecture & Patterns
+
+### Kiosk System Directory Structure
+
+**Standard directory structure that MUST be followed throughout the project:**
+
+```
+/opt/kiosk/                          # KIOSK_BASE_DIR
+├── scripts/                         # KIOSK_SCRIPTS_DIR
+├── server/                          # KIOSK_SERVER_DIR
+│   └── files/                       # Temporary PDF files
+├── utils/                           # KIOSK_UTILS_DIR
+├── templates/                       # KIOSK_TEMPLATES_DIR
+└── tmp/                             # KIOSK_TEMP_DIR
+```
+
+#### Directory Constants (setup-kiosk.sh):
+
+```bash
+readonly KIOSK_BASE_DIR="/opt/kiosk"
+readonly KIOSK_SCRIPTS_DIR="$KIOSK_BASE_DIR/scripts"
+readonly KIOSK_SERVER_DIR="$KIOSK_BASE_DIR/server"
+readonly KIOSK_UTILS_DIR="$KIOSK_BASE_DIR/utils"
+readonly KIOSK_TEMPLATES_DIR="$KIOSK_BASE_DIR/templates"
+readonly KIOSK_TEMP_DIR="$KIOSK_BASE_DIR/tmp"
+```
+
+#### Configuration Files:
+
+- **Config**: `$KIOSK_BASE_DIR/kiosk.conf`
+- **Environment**: `/etc/environment`
+- **State**: `/var/lib/kiosk-setup-state`
+
+#### Systemd Services:
+
+- `/etc/systemd/system/kiosk-splash.service`
+- `/etc/systemd/system/kiosk-start.service`
+- `/etc/systemd/system/kiosk-print-server.service`
+
+**Important**: All scripts must use these exact directory constants and structure.
 
 ### Script Organization
 
@@ -113,6 +183,33 @@ OS_VERSION=$(lsb_release -rs 2>/dev/null || echo "Unknown")
 
 ## Development Workflow
 
+### macOS Development Considerations
+
+**All development and testing is performed on macOS targeting Linux deployment**
+
+#### What Works on macOS:
+
+- ✅ Script syntax validation (`bash -n script.sh`)
+- ✅ File structure and directory operations
+- ✅ Logic flow and variable consistency
+- ✅ Documentation and code organization
+- ✅ Git operations and version control
+
+#### What Cannot be Tested on macOS:
+
+- ❌ `systemctl` commands (systemd is Linux-specific)
+- ❌ CUPS printing system (different implementation)
+- ❌ Hardware GPIO and boot processes
+- ❌ Service startup and management
+- ❌ Raspberry Pi specific features
+
+#### Development Strategy:
+
+1. **Static Analysis on macOS**: Syntax, structure, consistency
+2. **Cross-platform Code**: Write Linux-compatible scripts
+3. **Documentation**: Clear marking of Linux-specific features
+4. **Testing**: Final validation must be done on Raspberry Pi
+
 ### Script Creation Template
 
 1. Start with environment detection and validation
@@ -127,6 +224,14 @@ OS_VERSION=$(lsb_release -rs 2>/dev/null || echo "Unknown")
 - Implement verbose mode with `set -x` option
 - Log all system state changes
 - Provide manual rollback instructions in comments
+
+#### macOS-Specific Debugging:
+
+- **Syntax validation**: Always use `bash -n script.sh` before deployment
+- **Cross-platform testing**: Avoid hardcoded paths that differ between macOS/Linux
+- **Service simulation**: Mock systemd commands for development testing
+- **Dependency checks**: Verify Linux-specific commands with conditional logic
+- **Terminal differences**: Some terminal behaviors may differ between macOS and Linux environments
 
 ## File Naming & Structure
 
@@ -180,6 +285,16 @@ The project includes automated tools to ensure documentation structure complianc
 2. **After making changes**: Run validation scripts to ensure compliance
 3. **Before committing**: Ensure all validation scripts pass
 
+#### macOS Validation Limitations
+
+**Important**: Since development is done on macOS while targeting Linux:
+
+- **Syntax validation**: Works perfectly on macOS
+- **Structure validation**: Fully functional
+- **Service validation**: Cannot test systemd services (will show as "not found")
+- **Hardware validation**: Cannot test Pi-specific features
+- **Final validation**: Must be performed on actual Raspberry Pi hardware
+
 #### Integration Requirements
 
 - All documentation changes must maintain the established structure
@@ -193,3 +308,6 @@ The project includes automated tools to ensure documentation structure complianc
 - Copilot instructions must be referenced in developer workflow sections
 - All scripts in `tests/` should be executable and provide clear feedback
 - Validation tools should provide specific, actionable error messages
+- **macOS Development Note**: All code must be written for Linux compatibility despite being developed on macOS
+- **Cross-platform Testing**: Static analysis on macOS, functional testing on Raspberry Pi
+- **Documentation Requirements**: Clearly mark Linux-specific features and limitations
