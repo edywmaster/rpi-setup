@@ -1,5 +1,7 @@
 # System Info Utility - Guia de Uso
 
+> **📋 Versão**: v1.3.1 | **Utilitário**: system-info.sh | **Atualizado em**: 2025-07-21
+
 ## Visão Geral
 
 O utilitário `system-info.sh` é uma ferramenta de diagnóstico que exibe informações abrangentes sobre o sistema Raspberry Pi e o status das configurações de automação instaladas.
@@ -233,4 +235,4 @@ fi
 
 ---
 
-**Versão**: 1.0.0 | **Compatibilidade**: Raspberry Pi OS Lite (Debian 12 "bookworm")
+**Versão deste guia**: v1.3.1 | **Utilitário**: system-info.sh | **Sistema base**: prepare-system.sh v1.3.1 | **Atualizado em**: 2025-07-21

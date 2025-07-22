@@ -1,5 +1,7 @@
 # 📚 Documentação do Projeto rpi-setup
 
+> **📋 Versão**: v1.3.1 | **Atualizada em**: 2025-07-21 | **🆕 Novo**: Sistema de Versionamento Centralizado
+
 ## 📁 Estrutura de Documentação
 
 ### 🏭 Produção (`docs/production/`)
@@ -18,6 +20,7 @@ Documentação técnica e de desenvolvimento:
 
 - **[README-DETAILED.md](development/README-DETAILED.md)** - README original com todas as informações técnicas
 - **[RELEASE-NOTES.md](development/RELEASE-NOTES.md)** - Histórico de versões e correções de bugs
+- **[VERSION-MANAGEMENT.md](development/VERSION-MANAGEMENT.md)** - 🆕 Sistema centralizado de gerenciamento de versões
 - **[SYSTEM-INFO-ENVIRONMENT-INTEGRATION.md](development/SYSTEM-INFO-ENVIRONMENT-INTEGRATION.md)** - Detalhes técnicos da integração com /etc/environment
 - **[SYSTEM-INFO-PRODUCTION-SUMMARY.md](development/SYSTEM-INFO-PRODUCTION-SUMMARY.md)** - Resumo completo da implementação do system-info.sh
 
@@ -31,10 +34,11 @@ Documentação especializada para desenvolvimento assistido por IA:
   - Diretrizes de segurança e validação
   - Fluxo de desenvolvimento e testes
 
-## � Scripts e Ferramentas (`scripts/`)
+## 🔧 Scripts e Ferramentas (`scripts/`)
 
 - **[setup-kiosk.sh](../scripts/setup-kiosk.sh)** - Setup completo do sistema kiosk
 - **[deploy-multiple.sh](../scripts/deploy-multiple.sh)** - Deploy em múltiplos dispositivos
+- **[version-manager.sh](../scripts/version-manager.sh)** - 🆕 Gerenciamento centralizado de versões
 
 ## 📋 Documentação de Produção (`docs/production/`)
 
@@ -52,6 +56,8 @@ Documentação especializada para desenvolvimento assistido por IA:
 Scripts de validação e teste do projeto:
 
 - **[test-script.sh](../tests/test-script.sh)** - Script de validação principal
+- **[test-version-manager.sh](../tests/test-version-manager.sh)** - 🆕 Testes do sistema de versionamento
+- **[demo-version-manager.sh](../tests/demo-version-manager.sh)** - 🆕 Demonstrações do workflow de versões
 - **[check-docs-reorganization.sh](../tests/check-docs-reorganization.sh)** - Validação da estrutura de documentação
 - **[validate-docs-structure.sh](../tests/validate-docs-structure.sh)** - Validador completo da organização
 - **[validate-copilot-integration.sh](../tests/validate-copilot-integration.sh)** - Validação da integração das instruções do Copilot
@@ -171,3 +177,24 @@ O projeto inclui ferramentas automatizadas para validar a estrutura e organizaç
 
 # 6. Se tudo estiver OK, committar
 ```
+
+## 🔄 Gerenciamento de Versões
+
+O projeto utiliza um sistema centralizado de versionamento. Para atualizar versões:
+
+```bash
+# Verificar versão atual
+./scripts/version-manager.sh --current
+
+# Atualizar versão
+./scripts/version-manager.sh --update X.Y.Z "Descrição da mudança"
+
+# Validar consistência
+./scripts/version-manager.sh --validate
+```
+
+Consulte [VERSION-MANAGEMENT.md](development/VERSION-MANAGEMENT.md) para detalhes completos.
+
+---
+
+**Versão desta documentação**: v1.3.1 | **Última atualização**: 2025-07-21 | **Sistema de versionamento**: [version-manager.sh](../scripts/version-manager.sh)

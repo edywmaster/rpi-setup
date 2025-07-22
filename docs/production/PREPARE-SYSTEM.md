@@ -1,5 +1,7 @@
 # Script de Preparação do Sistema - prepare-system.sh
 
+> **📋 Versão**: v1.3.1 | **Atualizado em**: 2025-07-21 | **Status**: Produção Estável
+
 ## Visão Geral
 
 Script de preparação inicial para Raspberry Pi OS Lite que automatiza:
@@ -421,3 +423,7 @@ Após a execução bem-sucedida, você pode:
 - **Testado**: Raspberry Pi 4B com Pi OS Lite
 - **Suportado**: Outros modelos de Raspberry Pi
 - **Requerido**: Debian 12 "bookworm" ou superior
+
+---
+
+**Versão deste manual**: v1.3.1 | **Script**: prepare-system.sh v1.3.1 | **Última atualização**: 2025-07-21

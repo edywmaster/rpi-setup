@@ -2,6 +2,8 @@
 
 Automação completa para Raspberry Pi OS Lite - Configure múltiplos dispositivos com um único comando.
 
+> **📋 Versão Atual**: v1.3.1 | **Última Atualização**: 2025-07-21 | **🆕 Sistema de Versionamento Centralizado**
+
 ## ⚡ Execução Rápida
 
 Execute este comando em qualquer Raspberry Pi para configuração automática:
@@ -144,7 +146,8 @@ curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/utils/sys
 - **[Guia de Produção](docs/production/DEPLOYMENT.md)** - Implantação em larga escala
 - **[Manual Completo](docs/production/PREPARE-SYSTEM.md)** - Documentação detalhada
 - **[Desenvolvimento](docs/development/)** - Informações técnicas e correções
+- **[Gerenciamento de Versões](docs/development/VERSION-MANAGEMENT.md)** - 🆕 Sistema centralizado de versionamento
 
 ---
 
-**Versão atual**: v1.2.0 | **Repositório**: [edywmaster/rpi-setup](https://github.com/edywmaster/rpi-setup)
+**Versão atual**: v1.3.1 | **Última Atualização**: 2025-07-21 | **Repositório**: [edywmaster/rpi-setup](https://github.com/edywmaster/rpi-setup)

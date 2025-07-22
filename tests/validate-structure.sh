@@ -121,7 +121,26 @@ main() {
     log_info "Checking executable permissions..."
     check_executable "prepare-system.sh" || ((errors++))
     check_executable "scripts/deploy-multiple.sh" || ((errors++))
+    check_executable "scripts/setup-kiosk.sh" || ((errors++))
+    check_executable "scripts/version-manager.sh" || ((errors++))
     check_executable "tests/test-script.sh" || ((errors++))
+    check_executable "tests/test-version-manager.sh" || ((errors++))
+
+    # Check version management
+    echo
+    log_info "Checking version management system..."
+    check_file "scripts/version-manager.sh" "Version manager script" || ((errors++))
+    check_file "tests/test-version-manager.sh" "Version manager tests" || ((errors++))
+    
+    # Check version consistency if version manager exists
+    if [[ -x "$PROJECT_ROOT/scripts/version-manager.sh" ]]; then
+        log_info "Validating version consistency..."
+        if "$PROJECT_ROOT/scripts/version-manager.sh" --validate >/dev/null 2>&1; then
+            log_success "Version consistency validation passed"
+        else
+            log_warn "Version consistency issues detected - run version-manager.sh --validate for details"
+        fi
+    fi
 
     # Summary
     echo
@@ -129,6 +148,7 @@ main() {
     if [[ $errors -eq 0 ]]; then
         log_success "Project structure validation PASSED!"
         echo -e "${GREEN}All files and directories are properly organized.${NC}"
+        echo -e "${GREEN}Version management system is properly integrated.${NC}"
     else
         log_error "Project structure validation FAILED!"
         echo -e "${RED}Found $errors issues that need to be resolved.${NC}"

@@ -1,0 +1,17 @@
+# rpi-setup Project Version Configuration
+# Updated on 2025-07-21 21:58:43
+
+# Main project version
+PROJECT_VERSION=1.3.1
+
+# Component versions
+NODEJS_VERSION=v22.13.1
+KIOSK_API_VERSION=v1
+
+# Last update information
+LAST_UPDATE=2025-07-21
+LAST_UPDATE_BY=edmarj.cruz
+
+# Version history
+# Format: VERSION:DATE:DESCRIPTION
+VERSION_HISTORY="1.3.0:2025-07-21:Initial version configuration\n1.3.1:2025-07-21:Version Manager Implementation"

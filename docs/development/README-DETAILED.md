@@ -1,5 +1,7 @@
 # rpi-setup
 
+> **📋 Versão**: v1.3.1 | **Documentação Técnica** | **Atualizada em**: 2025-07-21
+
 ## 🧠 Instruções para o GitHub Copilot
 
 ### Objetivo do Projeto:
@@ -125,4 +127,9 @@ O script `prepare-system.sh` instala automaticamente:
 ## 📚 Documentação Adicional
 
 - 📋 **[Release Notes](RELEASE-NOTES.md)** - Histórico de versões e correções
-- 🛠️ **[Instruções para Copilot](.github/copilot-instructions.md)** - Guia para desenvolvimento
+- 🆕 **[Gerenciamento de Versões](VERSION-MANAGEMENT.md)** - Sistema centralizado de versionamento
+- 🛠️ **[Instruções para Copilot](../.github/copilot-instructions.md)** - Guia para desenvolvimento
+
+---
+
+**Versão desta documentação**: v1.3.1 | **Projeto**: rpi-setup v1.3.1 | **Última atualização**: 2025-07-21

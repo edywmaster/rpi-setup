@@ -1,5 +1,7 @@
 # 🚀 Guia de Implantação em Produção
 
+> **📋 Versão**: v1.3.1 | **Atualizado em**: 2025-07-21 | **Status**: Produção
+
 ## Execução Rápida - Um Comando
 
 Para configurar qualquer Raspberry Pi instantaneamente:
@@ -249,3 +251,7 @@ A desinstalação do kiosk **não remove** o sistema base:
 # Verificar logs da desinstalação
 ssh pi@192.168.1.100 "tail -f /var/log/kiosk-uninstall.log"
 ```
+
+---
+
+**Versão deste guia**: v1.3.1 | **Última atualização**: 2025-07-21 | **Sistema de base**: prepare-system.sh v1.3.1

@@ -1,5 +1,7 @@
 # Servidor de Impressão Kiosk
 
+> **📋 Versão**: v1.3.1 | **Servidor**: Node.js Print Server | **Atualizado em**: 2025-07-21
+
 Servidor de impressão Node.js para sistema kiosk em Raspberry Pi. Este servidor gerencia impressão de badges em PDF via CUPS, com integração à API externa e suporte a impressoras térmicas.
 
 ## Funcionalidades
@@ -260,3 +262,7 @@ Para problemas e sugestões, consulte:
 
 - [Documentação do projeto](https://github.com/edywmaster/rpi-setup)
 - [Issues no GitHub](https://github.com/edywmaster/rpi-setup/issues)
+
+---
+
+**Versão desta documentação**: v1.3.1 | **Sistema base**: prepare-system.sh v1.3.1 | **Última atualização**: 2025-07-21
