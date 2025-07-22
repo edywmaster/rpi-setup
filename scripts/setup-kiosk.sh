@@ -436,8 +436,8 @@ EOF
         return 1
     fi
     
-    # Add global environment variables
-    log_info "Adicionando variáveis ao ambiente global..."
+    # Add global environment variables (always update existing ones)
+    log_info "Atualizando variáveis do ambiente global..."
     
     local env_vars=(
         "KIOSK_VERSION=\"$KIOSK_VERSION\""
@@ -456,15 +456,19 @@ EOF
         "KIOSK_TEMPLATES_DIR=\"$KIOSK_TEMPLATES_DIR\""
     )
     
+    # Remove existing variables first to ensure updates
     for var in "${env_vars[@]}"; do
         local var_name=$(echo "$var" | cut -d'=' -f1)
         
-        if ! grep -q "^export $var_name=" "$GLOBAL_ENV_FILE" 2>/dev/null; then
-            echo "export $var" >> "$GLOBAL_ENV_FILE"
-            log_info "✅ Variável adicionada: $var_name"
-        else
-            log_info "⚡ Variável já existe: $var_name"
+        # Remove existing variable if it exists
+        if grep -q "^export $var_name=" "$GLOBAL_ENV_FILE" 2>/dev/null; then
+            sed -i "/^export $var_name=/d" "$GLOBAL_ENV_FILE" 2>/dev/null || true
+            log_info "🔄 Variável existente removida: $var_name"
         fi
+        
+        # Add the variable (always)
+        echo "export $var" >> "$GLOBAL_ENV_FILE"
+        log_info "✅ Variável atualizada: $var_name"
     done
     
     # Set file permissions
