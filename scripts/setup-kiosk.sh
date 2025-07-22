@@ -393,7 +393,7 @@ configure_kiosk_variables() {
     # Default configuration values
     local KIOSK_VERSION="$prepare_version"
     local KIOSK_APP_MODE="REDE"  # REDE or WEB
-    local KIOSK_APP_URL="http://localhost:3000"
+    local KIOSK_APP_URL="https://totem.ticketbay.com.br"  # Default URL for the kiosk app
     local KIOSK_APP_API="https://app.ticketbay.com.br/api/v1"
     local KIOSK_PRINT_HOST="localhost"
     local KIOSK_PRINT_PORT="50001"
