@@ -29,6 +29,13 @@ readonly LOG_FILE="/var/log/kiosk-setup.log"
 readonly LOCK_FILE="/tmp/kiosk-setup.lock"
 readonly STATE_FILE="/var/lib/kiosk-setup-state"
 
+# Kiosk application configuration
+readonly KIOSK_APP_MODE="REDE"  # REDE or WEB
+readonly KIOSK_APP_URL="http://10.0.0.198:3000"
+readonly KIOSK_APP_API="http://10.0.0.198/api/v2"
+readonly KIOSK_PRINT_HOST="localhost"
+readonly KIOSK_PRINT_PORT="50001"
+
 # Kiosk system structure
 readonly KIOSK_BASE_DIR="/opt/kiosk"
 readonly KIOSK_SCRIPTS_DIR="$KIOSK_BASE_DIR/scripts"
@@ -392,11 +399,7 @@ configure_kiosk_variables() {
     
     # Default configuration values
     local KIOSK_VERSION="$prepare_version"
-    local KIOSK_APP_MODE="REDE"  # REDE or WEB
-    local KIOSK_APP_URL="http://10.0.0.198:3000"  # Default URL for the kiosk app
-    local KIOSK_APP_API="http://10.0.0.198/api/v2"
-    local KIOSK_PRINT_HOST="localhost"
-    local KIOSK_PRINT_PORT="50001"
+
 
     # Create kiosk configuration file
     log_info "Criando arquivo de configuração do kiosk..."
