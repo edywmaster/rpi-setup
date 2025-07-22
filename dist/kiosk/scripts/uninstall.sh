@@ -404,10 +404,12 @@ remove_setup_status() {
 remove_environment_variables() {
     print_header "REMOVENDO VARIÁVEIS DE AMBIENTE"
     
-    log_info "Removendo variáveis de ambiente globais..."
+    log_info "Removendo variáveis de ambiente globais definidas pelo setup-kiosk.sh..."
     
-    # List of environment variables to remove
+    # List of environment variables to remove (must match setup-kiosk.sh)
+    # This list is synchronized with env_vars array in setup_kiosk_configuration()
     local env_vars_to_remove=(
+        # Core kiosk variables (from setup-kiosk.sh env_vars array)
         "KIOSK_VERSION"
         "KIOSK_APP_MODE"
         "KIOSK_APP_URL"
@@ -418,12 +420,16 @@ remove_environment_variables() {
         "KIOSK_PRINT_SERVER"
         "KIOSK_PRINT_SCRIPT"
         "KIOSK_PRINT_TEMP"
-        "KIOSK_BASE_DIR"
         "KIOSK_SCRIPTS_DIR"
         "KIOSK_SERVER_DIR"
         "KIOSK_UTILS_DIR"
         "KIOSK_TEMPLATES_DIR"
+        
+        # Additional directory variables
+        "KIOSK_BASE_DIR"
         "KIOSK_TEMP_DIR"
+        
+        # Legacy/alternative variable names (for backward compatibility)
         "APP_MODE"
         "APP_URL"
         "APP_API_URL"
@@ -462,7 +468,12 @@ remove_environment_variables() {
         
         # Replace original file with cleaned version
         if mv "$temp_file" "$GLOBAL_ENV_FILE"; then
-            log_success "✅ Arquivo de ambiente atualizado ($removed_count variáveis removidas)"
+            if [[ $removed_count -gt 0 ]]; then
+                log_success "✅ Arquivo de ambiente atualizado ($removed_count variáveis KIOSK removidas)"
+                log_info "📋 Variáveis principais removidas: KIOSK_VERSION, KIOSK_APP_*, KIOSK_PRINT_*, KIOSK_*_DIR"
+            else
+                log_info "⚡ Nenhuma variável KIOSK encontrada para remoção"
+            fi
         else
             log_error "❌ Falha ao atualizar arquivo de ambiente"
             rm -f "$temp_file"
@@ -567,7 +578,7 @@ display_uninstall_summary() {
     log_info "   • Arquivos de estado removidos: $STATE_FILE"
     log_info "   • Configurações removidas: $KIOSK_CONFIG_FILE"
     log_info "   • Logs do servidor removidos: $PRINT_SERVER_LOG, $PRINTER_SCRIPT_LOG"
-    log_info "   • Variáveis de ambiente limpas: $GLOBAL_ENV_FILE"
+    log_info "   • Variáveis de ambiente limpas: 14 variáveis KIOSK_* + 4 legadas (total: 18)"
     
     echo
     log_info "📄 Arquivos de log:"

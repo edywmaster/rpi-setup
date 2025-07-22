@@ -311,3 +311,129 @@ The project includes automated tools to ensure documentation structure complianc
 - **macOS Development Note**: All code must be written for Linux compatibility despite being developed on macOS
 - **Cross-platform Testing**: Static analysis on macOS, functional testing on Raspberry Pi
 - **Documentation Requirements**: Clearly mark Linux-specific features and limitations
+
+## Mandatory Validation and Versioning Workflow
+
+### CRITICAL: Always Execute Validation and Versioning
+
+**Before ANY code creation, modification, or correction in this project, you MUST execute the following validation and versioning workflow:**
+
+#### 1. Pre-Change Validation (MANDATORY)
+
+```bash
+# Execute BEFORE making any changes
+./tests/validate-structure.sh
+./tests/validate-docs-structure.sh
+./tests/validate-copilot-integration.sh
+./scripts/version-manager.sh --validate
+```
+
+#### 2. Post-Change Validation (MANDATORY)
+
+```bash
+# Execute AFTER making any changes
+./tests/validate-structure.sh
+./tests/validate-docs-structure.sh
+./tests/validate-copilot-integration.sh
+./scripts/version-manager.sh --validate
+```
+
+#### 3. Version Management (MANDATORY for Significant Changes)
+
+For any **significant changes** (new features, bug fixes, documentation updates):
+
+```bash
+# Check current version
+./scripts/version-manager.sh --current
+
+# Update version (increment appropriately)
+./scripts/version-manager.sh --update <NEW_VERSION>
+
+# Validate version consistency
+./scripts/version-manager.sh --validate
+```
+
+#### 4. Version Increment Guidelines
+
+- **Patch version** (x.x.X): Bug fixes, documentation corrections, minor improvements
+- **Minor version** (x.X.x): New features, script additions, significant documentation
+- **Major version** (X.x.x): Breaking changes, major architecture changes
+
+#### 5. Validation Requirements by Change Type
+
+##### Script Creation/Modification
+
+```bash
+# Required validations
+bash -n <script.sh>                    # Syntax validation (macOS compatible)
+./tests/validate-structure.sh         # Project structure
+./scripts/version-manager.sh --validate # Version consistency
+```
+
+##### Documentation Changes
+
+```bash
+# Required validations
+./tests/validate-docs-structure.sh    # Documentation structure
+./tests/validate-copilot-integration.sh # Copilot integration
+./scripts/version-manager.sh --validate # Version consistency
+```
+
+##### Configuration Changes
+
+```bash
+# Required validations
+./tests/validate-structure.sh         # Project structure
+./tests/validate-copilot-integration.sh # Copilot integration
+./scripts/version-manager.sh --validate # Version consistency
+```
+
+### Automated Validation Integration
+
+#### For AI Development (Copilot)
+
+**MANDATORY WORKFLOW FOR ANY CHANGE:**
+
+1. **Pre-execution Analysis**: Before making any file changes, run validation scripts to understand current state
+2. **Change Implementation**: Execute the requested changes
+3. **Post-execution Validation**: Run validation scripts to ensure compliance
+4. **Version Update**: Update version if significant changes were made
+5. **Final Verification**: Confirm all validations pass
+
+#### Error Handling in Validation
+
+- **If validation fails**: STOP all operations and report specific errors
+- **Fix validation errors**: Address each error before proceeding
+- **Re-run validation**: Ensure all validations pass before continuing
+- **Document limitations**: Note any macOS vs Linux validation limitations
+
+#### Integration with Git Workflow
+
+```bash
+# Pre-commit validation (recommended)
+git add .
+./tests/validate-structure.sh && \
+./tests/validate-docs-structure.sh && \
+./scripts/version-manager.sh --validate && \
+git commit -m "feat: [description] - validated structure and version"
+```
+
+### Validation Script Requirements
+
+All validation scripts MUST:
+
+- Return proper exit codes (0 = success, 1 = failure)
+- Provide clear, actionable error messages
+- Work correctly on macOS development environment
+- Account for macOS vs Linux differences where applicable
+- Be executable and self-contained
+
+### Version Management Requirements
+
+All version updates MUST:
+
+- Update version numbers consistently across all files
+- Generate or update RELEASE-NOTES.md
+- Validate version format (semantic versioning)
+- Ensure compatibility with existing deployment scripts
+- Include changelog entries for significant changes

@@ -6,7 +6,7 @@
 # Este script valida se as instruções do Copilot estão adequadamente
 # integradas à estrutura de documentação do projeto
 
-set -e
+set -o pipefail
 
 # Cores para output
 RED='\033[0;31m'
@@ -48,7 +48,7 @@ if [[ -f ".github/copilot-instructions.md" ]]; then
     log_success "Arquivo de instruções existe: .github/copilot-instructions.md"
     
     # Verificar tamanho do arquivo
-    local lines=$(wc -l < .github/copilot-instructions.md)
+    lines=$(wc -l < .github/copilot-instructions.md)
     if [[ $lines -gt 50 ]]; then
         log_success "Arquivo de instruções tem conteúdo substancial ($lines linhas)"
     else

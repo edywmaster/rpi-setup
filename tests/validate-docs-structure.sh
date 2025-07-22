@@ -5,7 +5,7 @@
 # =============================================================================
 # Este script valida se a estrutura de documentação segue as diretrizes do projeto
 
-set -e
+set -o pipefail
 
 # Cores para output
 RED='\033[0;31m'
@@ -140,7 +140,7 @@ echo "🔍 Verificando conteúdo dos arquivos principais..."
 
 # Verificar se README.md é minimal
 if [[ -f "README.md" ]]; then
-    local lines=$(wc -l < README.md)
+    lines=$(wc -l < README.md)
     if [[ $lines -lt 100 ]]; then
         log_success "README.md é minimal ($lines linhas)"
     else

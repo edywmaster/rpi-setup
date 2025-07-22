@@ -5,7 +5,7 @@
 # =============================================================================
 # Purpose: Configure Raspberry Pi for kiosk system with touchscreen interface
 # Target: Post prepare-system.sh execution
-# Version: 1.3.1
+# Version: 1.4.0
 # Dependencies: Node.js, PM2, CUPS, fbi, imagemagick
 # 
 # Usage: 
@@ -22,7 +22,7 @@
 set -eo pipefail  # Exit on error, pipe failures
 
 # Script configuration
-readonly SCRIPT_VERSION="1.3.1"
+readonly SCRIPT_VERSION="1.4.0"
 readonly SCRIPT_NAME="$(basename "${0:-setup-kiosk.sh}")"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || pwd)"
 readonly LOG_FILE="/var/log/kiosk-setup.log"
@@ -387,7 +387,7 @@ configure_kiosk_variables() {
     log_info "Configurando variáveis globais do sistema kiosk..."
     
     # Get prepare-system version for reference
-    local prepare_version="1.3.1"  # Latest prepare-system version
+    local prepare_version="1.4.0"  # Latest prepare-system version
     
     # Default configuration values
     local KIOSK_VERSION="$prepare_version"
@@ -1122,7 +1122,7 @@ setup_splash_screen() {
     log_info "Configurando splash screen customizado..."
     
     # Use variables already defined in script (no need to source config file)
-    local prepare_version="1.3.1"  # Latest prepare-system version
+    local prepare_version="1.4.0"  # Latest prepare-system version
     
     # Check if base splash image exists (create a simple one if not)
     if [[ ! -f "$SPLASH_IMAGE" ]]; then
@@ -1364,7 +1364,7 @@ display_completion_summary() {
     echo
     
     # Use variables already defined in script
-    local prepare_version="1.3.1"  # Latest prepare-system version
+    local prepare_version="1.4.0"  # Latest prepare-system version
     local app_mode="REDE"
     local app_url="http://localhost:3000"
     local app_api_url="https://app.ticketbay.com.br/api/v1"

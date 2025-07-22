@@ -2,6 +2,89 @@
 
 > **📋 Versão**: v1.3.1 | **Documentação Técnica** | **Atualizada em**: 2025-07-21
 
+## 🔧 Validação e Versionamento Obrigatórios
+
+### ⚠️ CRÍTICO: Workflow de Validação Mandatório
+
+**Antes de QUALQUER criação, modificação ou correção de código neste projeto, você DEVE executar o seguinte workflow de validação e versionamento:**
+
+#### 1. Validação Pré-Mudança (OBRIGATÓRIA)
+
+```bash
+# Execute ANTES de fazer qualquer alteração
+./tests/validate-all.sh --pre-change
+```
+
+#### 2. Validação Pós-Mudança (OBRIGATÓRIA)
+
+```bash
+# Execute APÓS fazer qualquer alteração
+./tests/validate-all.sh --post-change --with-version
+```
+
+#### 3. Validação Completa (Recomendada)
+
+```bash
+# Validação completa do projeto
+./tests/validate-all.sh
+```
+
+#### 4. Atualização de Versão (Para Mudanças Significativas)
+
+```bash
+# Verificar versão atual
+./scripts/version-manager.sh --current
+
+# Atualizar versão (incrementar apropriadamente)
+./scripts/version-manager.sh --update <NOVA_VERSÃO>
+
+# Validar consistência da versão
+./scripts/version-manager.sh --validate
+```
+
+#### 5. Diretrizes de Incremento de Versão
+
+- **Versão de patch** (x.x.X): Correções de bugs, correções de documentação, melhorias menores
+- **Versão menor** (x.X.x): Novos recursos, adições de scripts, documentação significativa
+- **Versão maior** (X.x.x): Mudanças que quebram compatibilidade, grandes mudanças de arquitetura
+
+### 🛠️ Ferramentas de Validação Disponíveis
+
+- `./tests/validate-all.sh` - Script de validação completa
+- `./tests/validate-structure.sh` - Validação da estrutura do projeto
+- `./tests/validate-docs-structure.sh` - Validação da estrutura de documentação
+- `./tests/validate-copilot-integration.sh` - Validação da integração com Copilot
+- `./scripts/version-manager.sh` - Gerenciamento de versões
+- `./scripts/pre-commit.sh` - Hook de pré-commit para Git
+
+### 📋 Installation do Hook de Pré-Commit
+
+```bash
+# Instalar o hook de pré-commit
+cp scripts/pre-commit.sh .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+
+### 🔄 Workflow de Desenvolvimento Recomendado
+
+```bash
+# 1. Antes de fazer mudanças
+./tests/validate-all.sh --pre-change
+
+# 2. Fazer as alterações necessárias
+# ... suas modificações ...
+
+# 3. Após as mudanças
+./tests/validate-all.sh --post-change
+
+# 4. Se mudanças significativas, atualizar versão
+./scripts/version-manager.sh --update 1.3.2
+
+# 5. Commit com validação
+git add .
+git commit -m "feat: descrição - validado estrutura e versão"
+```
+
 ## 🧠 Instruções para o GitHub Copilot
 
 ### Objetivo do Projeto:

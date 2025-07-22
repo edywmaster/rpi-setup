@@ -1,0 +1,166 @@
+# =============================================================================
+# Raspberry Pi Setup - Development Configuration
+# =============================================================================
+# Purpose: Central configuration for development workflow and validation
+# Version: 1.0.0
+# Author: Raspberry Pi Setup Team
+# Created: 2025-07-21
+# =============================================================================
+
+# Project Information
+PROJECT_NAME="rpi-setup"
+PROJECT_VERSION="1.0.0"
+DEVELOPMENT_OS="macOS"
+TARGET_OS="Raspberry Pi OS Lite (Debian 12 bookworm)"
+
+# Directory Structure
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+DOCS_DIR="$PROJECT_ROOT/docs"
+SCRIPTS_DIR="$PROJECT_ROOT/scripts"
+TESTS_DIR="$PROJECT_ROOT/tests"
+GITHUB_DIR="$PROJECT_ROOT/.github"
+
+# Validation Scripts (ordered by importance)
+VALIDATION_SCRIPTS=(
+    "$TESTS_DIR/validate-structure.sh"
+    "$TESTS_DIR/validate-docs-structure.sh"
+    "$TESTS_DIR/validate-copilot-integration.sh"
+)
+
+# Version Management
+VERSION_MANAGER="$SCRIPTS_DIR/version-manager.sh"
+VERSION_CONFIG="$PROJECT_ROOT/.version"
+
+# Development Tools
+PRE_COMMIT_HOOK="$SCRIPTS_DIR/pre-commit.sh"
+COMPLETE_VALIDATOR="$TESTS_DIR/validate-all.sh"
+
+# =============================================================================
+# Mandatory Validation Workflow Commands
+# =============================================================================
+
+# Pre-change validation (run BEFORE making any changes)
+PRE_CHANGE_VALIDATION=(
+    "$TESTS_DIR/validate-structure.sh"
+    "$TESTS_DIR/validate-docs-structure.sh"
+    "$TESTS_DIR/validate-copilot-integration.sh"
+    "$SCRIPTS_DIR/version-manager.sh --validate"
+)
+
+# Post-change validation (run AFTER making any changes)
+POST_CHANGE_VALIDATION=(
+    "$TESTS_DIR/validate-structure.sh"
+    "$TESTS_DIR/validate-docs-structure.sh"
+    "$TESTS_DIR/validate-copilot-integration.sh"
+    "$SCRIPTS_DIR/version-manager.sh --validate"
+)
+
+# Script-specific validation (for shell scripts)
+SCRIPT_VALIDATION=(
+    "bash -n"  # Syntax validation - works on macOS
+)
+
+# =============================================================================
+# Version Management Guidelines
+# =============================================================================
+
+# Version increment rules:
+# - PATCH (x.x.X): Bug fixes, documentation corrections, minor improvements
+# - MINOR (x.X.x): New features, script additions, significant documentation
+# - MAJOR (X.x.x): Breaking changes, major architecture changes
+
+# Version update command:
+# $SCRIPTS_DIR/version-manager.sh --update <NEW_VERSION>
+
+# =============================================================================
+# Development Environment Limitations (macOS)
+# =============================================================================
+
+# What WORKS on macOS:
+# - Script syntax validation (bash -n)
+# - File structure validation
+# - Documentation structure validation
+# - Logic flow verification
+# - Git operations
+
+# What DOES NOT WORK on macOS:
+# - systemctl commands (Linux systemd specific)
+# - CUPS printing system (different implementation)
+# - Hardware GPIO features
+# - Raspberry Pi boot processes
+# - Linux service management
+
+# =============================================================================
+# Quick Commands Reference
+# =============================================================================
+
+# Complete validation (recommended for major changes):
+# ./tests/validate-all.sh
+
+# Pre-change validation:
+# ./tests/validate-all.sh --pre-change
+
+# Post-change validation:
+# ./tests/validate-all.sh --post-change
+
+# Version management:
+# ./scripts/version-manager.sh --current      # Show current version
+# ./scripts/version-manager.sh --validate     # Check version consistency
+# ./scripts/version-manager.sh --update X.Y.Z # Update to new version
+
+# Install pre-commit hook:
+# cp scripts/pre-commit.sh .git/hooks/pre-commit
+# chmod +x .git/hooks/pre-commit
+
+# Manual validation workflow:
+# 1. ./tests/validate-structure.sh
+# 2. ./tests/validate-docs-structure.sh  
+# 3. ./tests/validate-copilot-integration.sh
+# 4. ./scripts/version-manager.sh --validate
+
+# =============================================================================
+# Integration with AI Development (Copilot)
+# =============================================================================
+
+# For any code modification, the AI MUST:
+# 1. Run pre-change validation
+# 2. Make the requested changes
+# 3. Run post-change validation
+# 4. Update version if significant changes
+# 5. Ensure all validations pass
+
+# Error handling:
+# - If validation fails: STOP and report errors
+# - Fix validation errors before proceeding
+# - Re-run validation after fixes
+# - Document any macOS vs Linux limitations
+
+# =============================================================================
+# Git Workflow Integration
+# =============================================================================
+
+# Recommended git workflow with validation:
+# git add .
+# ./tests/validate-all.sh --post-change
+# ./scripts/version-manager.sh --validate
+# git commit -m "feat: description - validated"
+
+# Emergency bypass (not recommended):
+# git commit --no-verify
+
+# =============================================================================
+# Cross-Platform Considerations
+# =============================================================================
+
+# Development on macOS targeting Linux:
+# - Write Linux-compatible scripts
+# - Test syntax on macOS (bash -n)
+# - Validate structure and documentation on macOS
+# - Final functional testing MUST be done on Raspberry Pi
+# - Document Linux-specific requirements clearly
+
+# File paths and compatibility:
+# - Use absolute paths where possible
+# - Avoid macOS-specific commands in scripts
+# - Test file permissions logic
+# - Validate cross-platform script behavior
