@@ -549,6 +549,23 @@ setup_print_server() {
         create_local_printer_script
     fi
     
+    # Download print.py script
+    log_info "Baixando script de impressão Python (print.py)..."
+    local print_py_url="$DIST_KIOSK_DIR/scripts/print.py"
+    local print_py_path="$KIOSK_SCRIPTS_DIR/print.py"
+    
+    if command -v wget >/dev/null 2>&1; then
+        wget -q -O "$print_py_path" "$print_py_url" 2>/dev/null || {
+            log_warn "⚠️  Não foi possível baixar print.py do repositório, mantendo sem o arquivo"
+        }
+    elif command -v curl >/dev/null 2>&1; then
+        curl -s -o "$print_py_path" "$print_py_url" 2>/dev/null || {
+            log_warn "⚠️  Não foi possível baixar print.py do repositório, mantendo sem o arquivo"
+        }
+    else
+        log_warn "⚠️  wget ou curl não disponível, não baixando print.py"
+    fi
+    
     # Create package.json for the print server
     log_info "Criando package.json para o servidor de impressão..."
     create_print_server_package_json
@@ -564,8 +581,9 @@ setup_print_server() {
     # Set proper permissions
     log_info "Configurando permissões dos arquivos..."
     chmod +x "$printer_py_path" 2>/dev/null || true
+    chmod +x "$print_py_path" 2>/dev/null || true
     chmod +x "$print_js_path" 2>/dev/null || true
-    chown -R pi:pi "$KIOSK_SERVER_DIR" "$KIOSK_UTILS_DIR" "$KIOSK_TEMP_DIR" 2>/dev/null || true
+    chown -R pi:pi "$KIOSK_SERVER_DIR" "$KIOSK_UTILS_DIR" "$KIOSK_TEMP_DIR" "$KIOSK_SCRIPTS_DIR" 2>/dev/null || true
     
     log_success "✅ Servidor de impressão configurado com sucesso"
     
@@ -573,7 +591,8 @@ setup_print_server() {
     echo
     log_info "📋 Servidor de impressão configurado:"
     log_info "   • Arquivo principal: $print_js_path"
-    log_info "   • Script Python: $printer_py_path"
+    log_info "   • Script Python (utils): $printer_py_path"
+    log_info "   • Script Python (scripts): $print_py_path"
     log_info "   • Porta: $KIOSK_PRINT_PORT"
     log_info "   • Serviço: kiosk-print-server.service"
     log_info "   • URL local: http://localhost:$KIOSK_PRINT_PORT"
@@ -1602,7 +1621,8 @@ display_completion_summary() {
     log_info "   • Status: $(systemctl is-active kiosk-print-server.service 2>/dev/null || echo 'inativo')"
     log_info "   • Health check: http://localhost:$print_port/health"
     log_info "   • Print endpoint: http://localhost:$print_port/badge/{id}"
-    log_info "   • Script Python: $KIOSK_UTILS_DIR/printer.py"
+    log_info "   • Script Python (utils): $KIOSK_UTILS_DIR/printer.py"
+    log_info "   • Script Python (scripts): $KIOSK_SCRIPTS_DIR/print.py"
     
     echo
     log_info "📄 Arquivos importantes:"

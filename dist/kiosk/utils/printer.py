@@ -18,7 +18,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('/var/log/kiosk-printer.log'),
+        logging.FileHandler('/opt/kiosk/printer.log'),
         logging.StreamHandler()
     ]
 )

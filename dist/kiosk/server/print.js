@@ -21,16 +21,13 @@ const API_URL = process.env.KIOSK_APP_API || process.env.API_URL
 const logger = winston.createLogger({
   level: "info",
   format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
-  transports: [
-    new winston.transports.File({ filename: "/var/log/kiosk-print-server.log" }),
-    new winston.transports.Console()
-  ]
+  transports: [new winston.transports.File({ filename: "/opt/kiosk/server.log" }), new winston.transports.Console()]
 })
 
 // Função para executar o script Python
 function printPDF(filePath) {
   return new Promise((resolve, reject) => {
-    const pythonScript = path.resolve(__dirname, "../utils/printer.py")
+    const pythonScript = path.resolve(__dirname, "../scripts/print.py")
     const command = `python3 ${pythonScript} "${filePath}"`
 
     logger.info(`Executando comando de impressão: ${command}`)
