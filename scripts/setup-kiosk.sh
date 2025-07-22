@@ -5,7 +5,7 @@
 # =============================================================================
 # Purpose: Configure Raspberry Pi for kiosk system with touchscreen interface
 # Target: Post prepare-system.sh execution
-# Version: 1.4.3
+# Version: 1.4.4
 # Dependencies: Node.js, PM2, CUPS, fbi, imagemagick
 # 
 # Usage: 
@@ -22,7 +22,7 @@
 set -eo pipefail  # Exit on error, pipe failures
 
 # Script configuration
-readonly SCRIPT_VERSION="1.4.3"
+readonly SCRIPT_VERSION="1.4.4"
 readonly SCRIPT_NAME="$(basename "${0:-setup-kiosk.sh}")"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || pwd)"
 readonly LOG_FILE="/var/log/kiosk-setup.log"
@@ -68,6 +68,7 @@ readonly INSTALLATION_STEPS=(
     "configuration"
     "print_server"
     "splash_setup"
+    "openbox_setup"
     "startup_service"
     "services_config"
     "kiosk_service"
@@ -387,7 +388,7 @@ configure_kiosk_variables() {
     log_info "Configurando variáveis globais do sistema kiosk..."
     
     # Get prepare-system version for reference
-    local prepare_version="1.4.3"  # Latest prepare-system version
+    local prepare_version="1.4.4"  # Latest prepare-system version
     
     # Default configuration values
     local KIOSK_VERSION="$prepare_version"
@@ -1126,7 +1127,7 @@ setup_splash_screen() {
     log_info "Configurando splash screen customizado..."
     
     # Use variables already defined in script (no need to source config file)
-    local prepare_version="1.4.3"  # Latest prepare-system version
+    local prepare_version="1.4.4"  # Latest prepare-system version
     
     # Check if base splash image exists (create a simple one if not)
     if [[ ! -f "$SPLASH_IMAGE" ]]; then
@@ -1248,7 +1249,184 @@ EOF
     log_info "   • Dispositivo: /dev/fb0"
 }
 
+setup_openbox_environment() {
+    local step="openbox_setup"
+    local last_step=$(get_last_state)
+    
+    if should_skip_step "$step" "$last_step"; then
+        log_info "⏭️  Pulando configuração do Openbox (já executada)"
+        return 0
+    fi
 
+    print_header "CONFIGURANDO AMBIENTE OPENBOX"
+    save_state "$step"
+
+    log_info "Configurando ambiente gráfico Openbox..."
+
+    # Install Openbox
+    log_info "Instalando Openbox..."
+    if ! dpkg -l | grep -q "^ii.*openbox"; then
+        apt-get update
+        apt-get install -y openbox unclutter xorg xserver-xorg-legacy x11-xserver-utils
+        log_success "✅ Openbox instalado"
+    else
+        log_info "ℹ️  Openbox já está instalado"
+    fi
+
+    # Create necessary directories
+    log_info "Criando diretórios necessários..."
+    mkdir -p /home/pi/.config/openbox
+    mkdir -p /home/pi/.config/chromium/Default
+    
+    # Ensure the Preferences file exists
+    touch /home/pi/.config/chromium/Default/Preferences
+    
+    # Set proper permissions
+    chmod -R 755 /home/pi/.config
+    chown -R pi:pi /home/pi/.config
+    
+    log_success "✅ Diretórios criados e permissões configuradas"
+
+    # Create Openbox autostart script
+    log_info "Criando script de autostart do Openbox..."
+    cat > /home/pi/.config/openbox/autostart << 'EOF'
+#!/bin/sh
+
+# Esperar até que o DISPLAY=:0 esteja disponível
+for i in $(seq 1 10); do
+    if [ -n "$(xdpyinfo -display :0 2>/dev/null)" ]; then
+        break
+    fi
+    echo "Aguardando o ambiente gráfico (DISPLAY=:0)..."
+    sleep 1
+done
+
+# Desabilitar o cursor do mouse
+unclutter -idle 0.5 -root &
+
+# Ajustar energia e tela
+xset s off &
+xset -dpms &
+xset s noblank &
+
+# Iniciar o navegador em modo kiosk
+sed -i 's/"exited_cleanly":false/"exited_cleanly":true/' ~/.config/chromium/Default/Preferences
+sed -i 's/"exit_type":"Crashed"/"exit_type":"Normal"/' ~/.config/chromium/Default/Preferences
+chromium --kiosk $KIOSK_APP_URL --noerrdialogs --disable-infobars --disable-translate --disable-features=Translate --start-fullscreen &
+EOF
+
+    # Set permissions for autostart script
+    chmod +x /home/pi/.config/openbox/autostart
+    chown pi:pi /home/pi/.config/openbox/autostart
+    
+    log_success "✅ Script de autostart do Openbox criado"
+
+    # Configure .xinitrc for user pi
+    local XINITRC_FILE="/home/pi/.xinitrc"
+    log_info "Configurando .xinitrc para iniciar Openbox..."
+    
+    # Add openbox-session to .xinitrc if not exists
+    if ! grep -q '^exec openbox-session' "$XINITRC_FILE" 2>/dev/null; then
+        echo "exec openbox-session" >> "$XINITRC_FILE"
+        log_info "✅ Linha adicionada ao $XINITRC_FILE: exec openbox-session"
+    else
+        log_info "ℹ️  A linha 'exec openbox-session' já existe em $XINITRC_FILE"
+    fi
+    
+    # Set proper permissions for .xinitrc
+    chown pi:pi "$XINITRC_FILE"
+    chmod 644 "$XINITRC_FILE"
+
+    # Create start.sh script
+    log_info "Criando script start.sh..."
+    create_kiosk_start_script
+    
+    log_success "Configuração do ambiente Openbox concluída"
+    
+    # Display summary
+    echo
+    log_info "📋 Ambiente Openbox configurado:"
+    log_info "   • Openbox instalado e configurado"
+    log_info "   • Autostart: /home/pi/.config/openbox/autostart"
+    log_info "   • .xinitrc: $XINITRC_FILE"
+    log_info "   • Script de início: $KIOSK_SCRIPTS_DIR/start.sh"
+    log_info "   • Unclutter para ocultar cursor"
+    log_info "   • Configurações de energia otimizadas"
+}
+
+create_kiosk_start_script() {
+    log_info "Criando script de inicialização do kiosk..."
+    
+    cat > "$KIOSK_SCRIPTS_DIR/start.sh" << 'EOF'
+#!/bin/bash
+
+# Função para carregar configurações do kiosk de /etc/environment
+load_kiosk_config() {
+    # Verificar se /etc/environment existe
+    if [[ ! -f /etc/environment ]]; then
+        echo "⚠️ Arquivo /etc/environment não encontrado"
+        return 1
+    fi
+    
+    # Carregar apenas variáveis KIOSK exportadas
+    set -a  # Exportar todas as variáveis definidas
+    source <(grep '^export KIOSK_' /etc/environment 2>/dev/null || true)
+    set +a  # Desativar exportação automática
+    
+    echo "✅ Configurações KIOSK carregadas de /etc/environment"
+}
+
+# Função para exibir variáveis KIOSK carregadas
+show_kiosk_vars() {
+    echo ""
+    echo "📋 Variáveis KIOSK carregadas:"
+    echo "────────────────────────────────"
+    
+    # Listar todas as variáveis KIOSK definidas
+    env | grep '^KIOSK_' | sort | while IFS='=' read -r var value; do
+        echo "  $var = $value"
+    done
+    
+    echo "────────────────────────────────"
+    echo ""
+}
+
+clear
+# Mostra uma mensagem inicial no terminal
+echo "🚀 Iniciando o Kiosk System"
+sleep 2
+
+kiosk_start() {
+  echo ""
+  echo "🚀 Iniciando o Kiosk System"
+  load_kiosk_config
+  show_kiosk_vars
+  sleep 15
+  startx > /dev/null 2>&1
+  bash "$HOME/.config/openbox/autostart"
+}
+
+ssh_start() {
+  echo ""
+  echo "Kiosk System"
+  load_kiosk_config
+  exit 0
+}
+
+# Verificar se o script está sendo executado via SSH
+if [ -n "$SSH_CONNECTION" ]; then
+  ssh_start
+else
+  kiosk_start
+fi
+EOF
+    
+    # Set permissions for start.sh script
+    chmod +x "$KIOSK_SCRIPTS_DIR/start.sh"
+    chown pi:pi "$KIOSK_SCRIPTS_DIR/start.sh"
+    
+    log_success "✅ Script start.sh criado: $KIOSK_SCRIPTS_DIR/start.sh"
+}
 
 setup_startup_service() {
     local step="startup_service"
@@ -1370,7 +1548,7 @@ display_completion_summary() {
     echo
     
     # Use variables already defined in script
-    local prepare_version="1.4.3"  # Latest prepare-system version
+    local prepare_version="1.4.4"  # Latest prepare-system version
     local app_mode="REDE"
     local app_url="http://localhost:3000"
     local app_api_url="https://app.ticketbay.com.br/api/v1"
@@ -1398,7 +1576,16 @@ display_completion_summary() {
     log_info "   • Versão exibida: v$prepare_version"
     
     echo
-    log_info "🚀 Serviço Kiosk Start:"
+    log_info "�️ Ambiente Gráfico (Openbox):"
+    log_info "   • Window Manager: Openbox instalado e configurado"
+    log_info "   • Autostart: /home/pi/.config/openbox/autostart"
+    log_info "   • .xinitrc: /home/pi/.xinitrc"
+    log_info "   • Unclutter: Para ocultar cursor do mouse"
+    log_info "   • Configurações de energia: Desabilitadas para kiosk"
+    log_info "   • Navegador: Chromium em modo kiosk fullscreen"
+    
+    echo
+    log_info "�🚀 Serviço Kiosk Start:"
     log_info "   • Serviço: kiosk-start.service"
     log_info "   • Script: $KIOSK_START_SCRIPT"
     log_info "   • Log: /var/log/kiosk-start.log"
@@ -1422,6 +1609,9 @@ display_completion_summary() {
     log_info "   • Log do servidor: /var/log/kiosk-print-server.log"
     log_info "   • Log do printer: /var/log/kiosk-printer.log"
     log_info "   • Utilitário de info: $KIOSK_UTILS_DIR/system-info.sh"
+    log_info "   • Script de início: $KIOSK_SCRIPTS_DIR/start.sh"
+    log_info "   • Autostart Openbox: /home/pi/.config/openbox/autostart"
+    log_info "   • .xinitrc: /home/pi/.xinitrc"
     
     echo
     log_info "🔧 Utilitários disponíveis:"
@@ -1466,6 +1656,7 @@ main() {
     configure_kiosk_variables
     setup_print_server
     setup_splash_screen
+    setup_openbox_environment
     setup_startup_service
     configure_services
     

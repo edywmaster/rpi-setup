@@ -1,5 +1,91 @@
 # Release Notes
 
+## Version 1.4.4 (Version Update)
+
+### 🆕 Atualizações
+
+- **Versão atualizada**: Projeto atualizado para versão 1.4.4
+- **Data de atualização**: 2025-07-22
+- **Gerenciamento centralizado**: Versões agora gerenciadas via scripts/version-manager.sh
+
+### 🔧 Alterações Técnicas
+
+- Atualização automática de versões em todos os componentes
+- Sincronização de versões entre prepare-system.sh e setup-kiosk.sh
+- Documentação atualizada com nova versão
+
+---
+
+## Version 1.4.4 (Ambiente Gráfico Openbox Implementado)
+
+### 🚀 Nova Funcionalidade Principal
+
+- **Data da implementação**: 2025-07-22
+- **Componente**: Configuração automática do ambiente gráfico Openbox
+- **Localização**: `scripts/setup-kiosk.sh` - função `setup_openbox_environment()`
+
+#### Funcionalidades Adicionadas:
+
+1. **Instalação Automática do Openbox**:
+
+   - Openbox como window manager principal
+   - Unclutter para ocultação do cursor
+   - Xorg e utilitários X11 necessários
+   - xserver-xorg-legacy para compatibilidade
+
+2. **Script de Autostart Otimizado**:
+
+   - Aguarda disponibilidade do DISPLAY=:0
+   - Configurações de energia otimizadas para kiosk
+   - Desabilita screensaver e gerenciamento DPMS
+   - Inicia Chromium automaticamente em modo kiosk
+
+3. **Script start.sh Aprimorado**:
+
+   - Função `load_kiosk_config()` para carregar variáveis de `/etc/environment`
+   - Função `show_kiosk_vars()` para exibir configurações
+   - Diferenciação entre execução local (kiosk) e SSH
+   - Integração com autostart do Openbox
+
+4. **Configuração .xinitrc Automática**:
+   - Adiciona `exec openbox-session` automaticamente
+   - Configuração de permissões corretas
+   - Evita duplicação se já configurado
+
+#### Estrutura de Arquivos Criados:
+
+```
+/home/pi/.config/openbox/autostart  # Script de inicialização do Openbox
+/home/pi/.config/chromium/Default/Preferences  # Configurações do navegador
+/home/pi/.xinitrc  # Configuração do X11
+/opt/kiosk/scripts/start.sh  # Script principal de inicialização
+```
+
+#### Melhorias de Sistema:
+
+- **Estado de Rastreamento**: Novo passo `openbox_setup` para recuperação
+- **Resumo Detalhado**: Informações completas sobre configuração Openbox
+- **Testes Automatizados**: `test-openbox-setup.sh` para validação
+- **Documentação**: `OPENBOX-KIOSK-SETUP.md` com detalhes técnicos
+
+#### Fluxo de Inicialização Otimizado:
+
+1. Serviço `kiosk-start.service` inicia `start.sh`
+2. Carregamento de variáveis de ambiente KIOSK
+3. Inicialização do X11 com `startx`
+4. Openbox carrega e executa autostart
+5. Chromium inicia em modo kiosk fullscreen
+
+#### Benefícios:
+
+- **Automatização Completa**: Zero configuração manual necessária
+- **Otimização para Kiosk**: Configurações específicas para touchscreen
+- **Robustez**: Tratamento de erros e verificações
+- **Flexibilidade**: Configuração via variáveis de ambiente
+- **Manutenibilidade**: Código organizado e testado
+
+---
+
 ## Version 1.4.3 (Kiosk Fullscreen Critical Fixes)
 
 ### 🐛 Correções Críticas em Produção
