@@ -2,7 +2,7 @@
 
 ## 📋 Análise Realizada
 
-Baseado na solicitação para analisar os scripts openbox, autostart e start para criar uma versão que inicie o Chromium em tela cheia, foi desenvolvida uma solução completa e integrada.
+Baseado na solicitação para analisar os scripts openbox, autostart e start para criar uma versão que inicie o Chromium em tela cheia, foi desenvolvida uma solução completa e **integrada ao setup-kiosk.sh**.
 
 ### Scripts Analisados
 
@@ -12,9 +12,9 @@ Baseado na solicitação para analisar os scripts openbox, autostart e start par
 
 ## 🚀 Solução Desenvolvida
 
-### Script Principal: `kiosk-start-fullscreen.sh`
+### Integração ao `setup-kiosk.sh`
 
-**Localização**: `/scripts/kiosk-start-fullscreen.sh`
+**Localização**: Função `setup_kiosk_fullscreen()` em `/scripts/setup-kiosk.sh`
 **Versão**: 1.4.3
 
 #### Funcionalidades Integradas
