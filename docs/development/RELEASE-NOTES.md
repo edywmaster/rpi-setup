@@ -5,7 +5,7 @@
 ### 🆕 Atualizações
 
 - **Versão atualizada**: Projeto atualizado para versão 1.4.3
-- **Data de atualização**: 2025-07-21
+- **Data de atualização**: 2025-07-22
 - **Gerenciamento centralizado**: Versões agora gerenciadas via scripts/version-manager.sh
 
 ### 🔧 Alterações Técnicas
@@ -16,6 +16,51 @@
 
 ---
 
+## Version 1.4.3 (Kiosk Fullscreen Service Fix)
+
+### 🔧 Correções do Serviço Kiosk Fullscreen
+
+- **Data da correção**: 2025-07-21
+- **Problema identificado**: Falhas no serviço systemd kiosk-fullscreen com erro "TERM environment variable not set"
+- **Componente afetado**: `scripts/setup-kiosk.sh` - função `setup_kiosk_fullscreen()`
+
+#### Correções Implementadas:
+
+1. **Variáveis de Ambiente Systemd**:
+
+   - Adicionado `Environment=TERM=xterm-256color`
+   - Configurado `Environment=XDG_RUNTIME_DIR=/run/user/1000`
+   - Mantido `Environment=DISPLAY=:0` e outras variáveis essenciais
+
+2. **Configurações de Segurança**:
+
+   - `PrivateTmp=false` para acesso ao X11 socket
+   - `ProtectSystem=false` para permitir acesso ao sistema gráfico
+   - `ProtectHome=false` para acesso ao diretório home do usuário
+
+3. **Sincronização X11**:
+
+   - `ExecStartPre` aguarda X11 estar disponível antes de iniciar
+   - Verificação do socket `/tmp/.X11-unix/X0`
+
+4. **Tratamento de Erros**:
+   - Melhor validação de ambiente no script kiosk
+   - Logs mais detalhados para debugging
+
+### 🧪 Novos Testes
+
+- **Criado**: `tests/test-kiosk-fullscreen-service.sh`
+  - Validação completa do serviço systemd
+  - Verificação de variáveis de ambiente
+  - Diagnóstico X11 e Chromium
+  - Guia de solução de problemas integrado
+
+### 🆕 Outras Atualizações
+
+- **Versão atualizada**: Projeto atualizado para versão 1.4.3
+- **Gerenciamento centralizado**: Versões agora gerenciadas via scripts/version-manager.sh
+
+---
 
 ## Version 1.4.2 (Bug Fix - Environment Variables Removal)
 

@@ -1274,15 +1274,14 @@ setup_kiosk_fullscreen() {
 set -euo pipefail
 
 # =============================================================================
-# CONFIGURAÇÕES E CONSTANTES
+# CONFIGURAÇÕES E CONSTANTES DO KIOSK FULLSCREEN
 # =============================================================================
 
-readonly SCRIPT_VERSION="1.4.3"
-readonly SCRIPT_NAME="kiosk-start-fullscreen.sh"
-readonly LOG_FILE="/var/log/kiosk-start.log"
+readonly KIOSK_START_SCRIPT_NAME="kiosk-start-fullscreen.sh"
+readonly KIOSK_START_LOG_FILE="/var/log/kiosk-start.log"
 
-# Diretórios do sistema kiosk
-readonly KIOSK_BASE_DIR="/opt/kiosk"
+# Diretórios do sistema kiosk (já definidos no início do script)
+# readonly KIOSK_BASE_DIR="/opt/kiosk"
 
 # Arquivos de configuração
 readonly XINITRC_FILE="/home/pi/.xinitrc"
@@ -1290,23 +1289,23 @@ readonly OPENBOX_CONFIG_DIR="/home/pi/.config/openbox"
 readonly CHROMIUM_CONFIG_DIR="/home/pi/.config/chromium/Default"
 
 # =============================================================================
-# FUNÇÕES DE LOGGING
+# FUNÇÕES DE LOGGING INTERNAS DO KIOSK FULLSCREEN
 # =============================================================================
 
-log_info() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] $*" | tee -a "$LOG_FILE"
+kiosk_log_info() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] $*" | tee -a "$KIOSK_START_LOG_FILE"
 }
 
-log_warn() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [WARN] $*" | tee -a "$LOG_FILE"
+kiosk_log_warn() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [WARN] $*" | tee -a "$KIOSK_START_LOG_FILE"
 }
 
-log_error() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] $*" | tee -a "$LOG_FILE"
+kiosk_log_error() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] $*" | tee -a "$KIOSK_START_LOG_FILE"
 }
 
-log_success() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [SUCCESS] $*" | tee -a "$LOG_FILE"
+kiosk_log_success() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [SUCCESS] $*" | tee -a "$KIOSK_START_LOG_FILE"
 }
 
 # =============================================================================
@@ -1314,10 +1313,10 @@ log_success() {
 # =============================================================================
 
 load_kiosk_config() {
-    log_info "Carregando configurações do kiosk de /etc/environment..."
+    kiosk_log_info "Carregando configurações do kiosk de /etc/environment..."
     
     if [[ ! -f /etc/environment ]]; then
-        log_error "Arquivo /etc/environment não encontrado"
+        kiosk_log_error "Arquivo /etc/environment não encontrado"
         return 1
     fi
     
@@ -1325,7 +1324,7 @@ load_kiosk_config() {
     source <(grep '^export KIOSK_' /etc/environment 2>/dev/null || true)
     set +a
     
-    log_success "Configurações KIOSK carregadas de /etc/environment"
+    kiosk_log_success "Configurações KIOSK carregadas de /etc/environment"
     return 0
 }
 
@@ -1351,35 +1350,41 @@ show_kiosk_vars() {
 # =============================================================================
 
 setup_openbox() {
-    log_info "Configurando Openbox para kiosk..."
+    kiosk_log_info "Configurando Openbox para kiosk..."
     
     # Criar diretórios necessários
-    sudo mkdir -p "$OPENBOX_CONFIG_DIR"
-    sudo mkdir -p "$CHROMIUM_CONFIG_DIR"
-    sudo touch "$CHROMIUM_CONFIG_DIR/Preferences"
+    mkdir -p "$OPENBOX_CONFIG_DIR" 2>/dev/null || sudo mkdir -p "$OPENBOX_CONFIG_DIR"
+    mkdir -p "$CHROMIUM_CONFIG_DIR" 2>/dev/null || sudo mkdir -p "$CHROMIUM_CONFIG_DIR"
+    touch "$CHROMIUM_CONFIG_DIR/Preferences" 2>/dev/null || sudo touch "$CHROMIUM_CONFIG_DIR/Preferences"
     
     # Criar script autostart para Openbox
-    log_info "Criando script autostart para Openbox..."
+    kiosk_log_info "Criando script autostart para Openbox..."
     
     cat > "/tmp/autostart" << 'AUTOSTART_EOF'
 #!/bin/sh
 
-# Esperar até que o DISPLAY=:0 esteja disponível
-for i in $(seq 1 10); do
-    if [ -n "$(xdpyinfo -display :0 2>/dev/null)" ]; then
+# Aguardar X11 estar disponível
+for i in $(seq 1 30); do
+    if xset q >/dev/null 2>&1; then
+        echo "X11 disponível após ${i}s"
         break
     fi
-    echo "Aguardando o ambiente gráfico (DISPLAY=:0)..."
+    echo "Aguardando X11... (${i}/30s)"
     sleep 1
 done
 
-# Desabilitar o cursor do mouse
-unclutter -idle 0.5 -root &
+# Configurar display
+export DISPLAY=:0
+
+# Desabilitar o cursor do mouse se unclutter estiver disponível
+if command -v unclutter >/dev/null 2>&1; then
+    unclutter -idle 0.5 -root &
+fi
 
 # Ajustar energia e tela
-xset s off &
-xset -dpms &
-xset s noblank &
+xset s off 2>/dev/null || true
+xset -dpms 2>/dev/null || true
+xset s noblank 2>/dev/null || true
 
 # Limpar crash flags do Chromium
 sed -i 's/"exited_cleanly":false/"exited_cleanly":true/' ~/.config/chromium/Default/Preferences 2>/dev/null || true
@@ -1390,6 +1395,9 @@ if [ -z "${KIOSK_APP_URL:-}" ]; then
     echo "⚠️ KIOSK_APP_URL não definida, usando página padrão"
     KIOSK_APP_URL="http://localhost:3000"
 fi
+
+# Aguardar um pouco mais para garantir que X11 está estável
+sleep 2
 
 # Iniciar o navegador em modo kiosk com tela cheia
 chromium-browser \
@@ -1405,6 +1413,42 @@ chromium-browser \
     --disable-features=Translate \
     --disable-background-timer-throttling \
     --disable-backgrounding-occluded-windows \
+    --disable-renderer-backgrounding \
+    --disable-field-trial-config \
+    --disable-background-networking \
+    --force-device-scale-factor=1 \
+    --disable-dev-shm-usage \
+    --no-sandbox \
+    --disable-gpu-sandbox \
+    "$KIOSK_APP_URL" &
+
+AUTOSTART_EOF
+
+    # Mover arquivo autostart para local correto
+    if cp "/tmp/autostart" "$OPENBOX_CONFIG_DIR/autostart" 2>/dev/null; then
+        chmod +x "$OPENBOX_CONFIG_DIR/autostart"
+    else
+        sudo cp "/tmp/autostart" "$OPENBOX_CONFIG_DIR/autostart"
+        sudo chmod +x "$OPENBOX_CONFIG_DIR/autostart"
+    fi
+    
+    # Configurar permissões
+    chown -R pi:pi "/home/pi/.config" 2>/dev/null || sudo chown -R pi:pi "/home/pi/.config"
+    chmod -R 755 "/home/pi/.config" 2>/dev/null || sudo chmod -R 755 "/home/pi/.config"
+    
+    # Configurar .xinitrc se necessário
+    if ! grep -q '^exec openbox-session' "$XINITRC_FILE" 2>/dev/null; then
+        if echo "exec openbox-session" >> "$XINITRC_FILE" 2>/dev/null; then
+            kiosk_log_info "Linha adicionada ao $XINITRC_FILE: exec openbox-session"
+        else
+            kiosk_log_warn "Não foi possível modificar $XINITRC_FILE"
+        fi
+    else
+        kiosk_log_info "A linha 'exec openbox-session' já existe em $XINITRC_FILE"
+    fi
+    
+    kiosk_log_success "Openbox configurado com sucesso"
+}
     --disable-renderer-backgrounding \
     --disable-field-trial-config \
     --disable-background-networking \
@@ -1440,37 +1484,39 @@ AUTOSTART_EOF
 # =============================================================================
 
 validate_environment() {
-    log_info "Validando ambiente para inicialização do kiosk..."
+    kiosk_log_info "Validando ambiente para inicialização do kiosk..."
     
     # Verificar se é Raspberry Pi
     if [[ ! -f /proc/device-tree/model ]] || ! grep -q "Raspberry Pi" /proc/device-tree/model 2>/dev/null; then
-        log_warn "Não parece ser um Raspberry Pi"
+        kiosk_log_warn "Não parece ser um Raspberry Pi - continuando mesmo assim"
     fi
     
     # Verificar se X11 está disponível
     if ! command -v startx >/dev/null 2>&1; then
-        log_error "startx não encontrado. Instale o X11 primeiro."
-        return 1
+        kiosk_log_warn "startx não encontrado - verificando se X11 já está ativo"
+        if ! command -v xset >/dev/null 2>&1; then
+            kiosk_log_error "X11 não está disponível. Instale o X11 primeiro."
+            return 1
+        fi
     fi
     
     # Verificar se Openbox está disponível
     if ! command -v openbox >/dev/null 2>&1; then
-        log_error "Openbox não encontrado. Instale o Openbox primeiro."
-        return 1
+        kiosk_log_warn "Openbox não encontrado - tentando continuar sem ele"
     fi
     
     # Verificar se Chromium está disponível
     if ! command -v chromium-browser >/dev/null 2>&1; then
-        log_error "Chromium não encontrado. Instale o Chromium primeiro."
+        kiosk_log_error "Chromium não encontrado. Instale o Chromium primeiro."
         return 1
     fi
     
     # Verificar se unclutter está disponível
     if ! command -v unclutter >/dev/null 2>&1; then
-        log_warn "unclutter não encontrado. O cursor do mouse pode ficar visível."
+        kiosk_log_warn "unclutter não encontrado. O cursor do mouse pode ficar visível."
     fi
     
-    log_success "Ambiente validado com sucesso"
+    kiosk_log_success "Ambiente validado com sucesso"
     return 0
 }
 
@@ -1479,16 +1525,44 @@ validate_environment() {
 # =============================================================================
 
 kiosk_start_fullscreen() {
+    # Configurar variáveis de ambiente se não estiverem definidas
+    export TERM="${TERM:-xterm-256color}"
+    export DISPLAY="${DISPLAY:-:0}"
+    export HOME="${HOME:-/home/pi}"
+    export USER="${USER:-pi}"
+    
     clear
     echo "🚀 Iniciando Kiosk System com Chromium em Tela Cheia"
     echo "Version: $SCRIPT_VERSION"
     echo ""
     
-    log_info "=== Iniciando Kiosk System Fullscreen ==="
+    kiosk_log_info "=== Iniciando Kiosk System Fullscreen ==="
+    kiosk_log_info "TERM: $TERM"
+    kiosk_log_info "DISPLAY: $DISPLAY"
+    kiosk_log_info "HOME: $HOME"
+    kiosk_log_info "USER: $USER"
+    
+    # Aguardar X11 estar disponível
+    kiosk_log_info "Aguardando X11 estar disponível..."
+    local max_wait=30
+    local wait_count=0
+    
+    while ! xset q >/dev/null 2>&1; do
+        if [ $wait_count -ge $max_wait ]; then
+            kiosk_log_error "X11 não está disponível após ${max_wait}s"
+            exit 1
+        fi
+        
+        echo "Aguardando X11... (${wait_count}/${max_wait}s)"
+        sleep 1
+        ((wait_count++))
+    done
+    
+    kiosk_log_success "X11 está disponível"
     
     # Carregar configurações
     if ! load_kiosk_config; then
-        log_error "Falha ao carregar configurações do kiosk"
+        kiosk_log_error "Falha ao carregar configurações do kiosk"
         exit 1
     fi
     
@@ -1497,19 +1571,45 @@ kiosk_start_fullscreen() {
     
     # Validar ambiente
     if ! validate_environment; then
-        log_error "Falha na validação do ambiente"
+        kiosk_log_error "Falha na validação do ambiente"
         exit 1
     fi
     
     # Configurar Openbox
     setup_openbox
     
-    log_info "Aguardando 3 segundos antes de iniciar X11..."
+    kiosk_log_info "Aguardando 3 segundos antes de iniciar aplicação..."
     sleep 3
     
-    # Iniciar X11 com Openbox
-    log_info "Iniciando X11 com Openbox..."
-    exec startx
+    # Verificar se KIOSK_APP_URL está definida
+    if [ -z "${KIOSK_APP_URL:-}" ]; then
+        kiosk_log_warn "KIOSK_APP_URL não definida, usando página padrão"
+        export KIOSK_APP_URL="http://localhost:3000"
+    fi
+    
+    # Iniciar Chromium diretamente
+    kiosk_log_info "Iniciando Chromium em modo kiosk..."
+    exec chromium-browser \
+        --kiosk \
+        --start-fullscreen \
+        --start-maximized \
+        --window-size=1920,1080 \
+        --window-position=0,0 \
+        --incognito \
+        --noerrdialogs \
+        --disable-infobars \
+        --disable-translate \
+        --disable-features=Translate \
+        --disable-background-timer-throttling \
+        --disable-backgrounding-occluded-windows \
+        --disable-renderer-backgrounding \
+        --disable-field-trial-config \
+        --disable-background-networking \
+        --force-device-scale-factor=1 \
+        --disable-dev-shm-usage \
+        --no-sandbox \
+        --disable-gpu-sandbox \
+        "$KIOSK_APP_URL"
 }
 
 # =============================================================================
@@ -1522,13 +1622,13 @@ ssh_start() {
     echo "Version: $SCRIPT_VERSION"
     echo ""
     
-    log_info "Executando em modo SSH - sem interface gráfica"
+    kiosk_log_info "Executando em modo SSH - sem interface gráfica"
     
     # Carregar configurações apenas para verificação
     if load_kiosk_config; then
         show_kiosk_vars
     else
-        log_warn "Configurações kiosk não encontradas"
+        kiosk_log_warn "Configurações kiosk não encontradas"
     fi
     
     echo "ℹ️  Para iniciar o kiosk com interface gráfica, execute diretamente no Raspberry Pi"
@@ -1566,7 +1666,7 @@ EXAMPLES:
 NOTES:
     - Este script deve ser executado como usuário pi
     - Configurações são carregadas de /etc/environment
-    - Logs são salvos em $LOG_FILE
+    - Logs são salvos em $KIOSK_START_LOG_FILE
     - Compatível com Raspberry Pi OS Lite (Debian 12 "bookworm")
 
 HELP_EOF
@@ -1591,13 +1691,13 @@ main() {
             load_kiosk_config || true
             validate_environment || exit 1
             setup_openbox
-            log_success "Configuração do Openbox concluída"
+            kiosk_log_success "Configuração do Openbox concluída"
             exit 0
             ;;
         --validate-only)
             load_kiosk_config || true
             validate_environment
-            log_success "Validação do ambiente concluída"
+            kiosk_log_success "Validação do ambiente concluída"
             exit 0
             ;;
         "")
@@ -1624,7 +1724,7 @@ main() {
 
 # Verificar se o script está sendo executado como root
 if [[ $EUID -eq 0 ]]; then
-    log_error "Este script não deve ser executado como root"
+    kiosk_log_error "Este script não deve ser executado como root"
     echo "Execute como usuário pi: sudo -u pi $0"
     exit 1
 fi
@@ -1643,8 +1743,9 @@ EOF
     cat > "/etc/systemd/system/kiosk-fullscreen.service" << 'SERVICE_EOF'
 [Unit]
 Description=Kiosk Fullscreen Start Service
-After=graphical-session.target network.target
-Wants=graphical-session.target
+After=graphical.target network.target sound.target
+Wants=graphical.target
+Requires=graphical.target
 RequiresMountsFor=/home
 
 [Service]
@@ -1654,17 +1755,26 @@ Restart=always
 RestartSec=10
 User=pi
 Group=pi
-Environment=DISPLAY=:0
 WorkingDirectory=/home/pi
 
-# Configurações de segurança
-PrivateTmp=true
-ProtectSystem=strict
-ProtectHome=read-only
-ReadWritePaths=/var/log /tmp
+# Environment variables necessárias
+Environment=DISPLAY=:0
+Environment=TERM=xterm-256color
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=HOME=/home/pi
+Environment=USER=pi
+
+# Configurações de segurança ajustadas para X11
+PrivateTmp=false
+ProtectSystem=false
+ProtectHome=false
+NoNewPrivileges=false
+
+# Aguardar até que X11 esteja disponível
+ExecStartPre=/bin/bash -c 'until [ -e /tmp/.X11-unix/X0 ]; do sleep 1; done'
 
 [Install]
-WantedBy=graphical-session.target
+WantedBy=graphical.target
 SERVICE_EOF
 
     # Enable the service
