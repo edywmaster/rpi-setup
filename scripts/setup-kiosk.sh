@@ -394,7 +394,7 @@ configure_kiosk_variables() {
     local KIOSK_VERSION="$prepare_version"
     local KIOSK_APP_MODE="REDE"  # REDE or WEB
     local KIOSK_APP_URL="http://10.0.0.198:3000"  # Default URL for the kiosk app
-    local KIOSK_APP_API="https://app.ticketbay.com.br/api/v1"
+    local KIOSK_APP_API="http://10.0.0.198/api/v2"
     local KIOSK_PRINT_HOST="localhost"
     local KIOSK_PRINT_PORT="50001"
 
@@ -482,10 +482,10 @@ EOF
     echo
     log_info "📋 Configuração do sistema kiosk:"
     log_info "   • Versão: $KIOSK_VERSION"
-    log_info "   • Modo: $APP_MODE"
-    log_info "   • URL da aplicação: $APP_URL"
-    log_info "   • API URL: $APP_API_URL"
-    log_info "   • Porta de impressão: $PRINT_PORT"
+    log_info "   • Modo: $KIOSK_APP_MODE"
+    log_info "   • URL da aplicação: $KIOSK_APP_URL"
+    log_info "   • API URL: $KIOSK_APP_API"
+    log_info "   • Porta de impressão: $KIOSK_PRINT_PORT"
     log_info "   • Diretório base: $KIOSK_BASE_DIR"
 }
 
@@ -596,8 +596,8 @@ const devMode = process.env.NODE_ENV === "development"
 const envFile = devMode ? ".env.local" : ".env"
 dotenv.config({ path: envFile })
 
-const PORT = process.env.KIOSK_PRINT_PORT || process.env.PORT || 50001
-const API_URL = process.env.KIOSK_APP_API || process.env.API_URL
+const PORT = process.env.KIOSK_PRINT_PORT || 50001
+const API_URL = process.env.KIOSK_APP_API
 
 // Configure logging
 const logger = winston.createLogger({
@@ -1042,8 +1042,8 @@ install_print_server_dependencies() {
         cat > "$KIOSK_SERVER_DIR/.env" << EOF
 # Kiosk Print Server Configuration
 NODE_ENV=production
-KIOSK_PRINT_PORT=50001
-KIOSK_APP_API=https://app.ticketbay.com.br/api/v1
+KIOSK_PRINT_PORT=$KIOSK_PRINT_PORT
+KIOSK_APP_API=$KIOSK_APP_API
 EOF
         log_success "✅ Arquivo .env criado"
     fi
@@ -1073,8 +1073,8 @@ SyslogIdentifier=kiosk-print-server
 
 # Environment variables
 Environment=NODE_ENV=production
-Environment=KIOSK_PRINT_PORT=50001
-Environment=KIOSK_APP_API=https://app.ticketbay.com.br/api/v1
+Environment=KIOSK_PRINT_PORT=$KIOSK_PRINT_PORT
+Environment=KIOSK_APP_API=$KIOSK_APP_API
 
 # Security settings
 NoNewPrivileges=true
