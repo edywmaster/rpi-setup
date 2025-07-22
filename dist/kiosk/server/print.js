@@ -176,9 +176,10 @@ app.get("/badge/:id", async (req, res, next) => {
     return res.status(400).json({ status: "error", message: "ID inválido." })
   }
 
-  const filename = `badge_${ID}_${Date.now()}.pdf`
+  //const filename = `badge_${ID}_${Date.now()}.pdf`
+  const filename = `badge.pdf`
   const filePath = path.join(__dirname, "../tmp", filename)
-  const fileApiUrl = `${API_URL}/app/totem/badge/${ID}`
+  const fileApiUrl = `${API_URL}/kiosk/badge/${ID}`
 
   try {
     await downloadPDF(fileApiUrl, filePath)
