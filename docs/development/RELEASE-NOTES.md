@@ -1,36 +1,69 @@
 # Release Notes
 
-## Version 1.4.3 (Version Update)
+## Version 1.4.3 (Kiosk Fullscreen Critical Fixes)
 
-### 🆕 Atualizações
+### 🐛 Correções Críticas em Produção
 
-- **Versão atualizada**: Projeto atualizado para versão 1.4.3
-- **Data de atualização**: 2025-07-22
-- **Gerenciamento centralizado**: Versões agora gerenciadas via scripts/version-manager.sh
-
-### 🔧 Alterações Técnicas
-
-- Atualização automática de versões em todos os componentes
-- Sincronização de versões entre prepare-system.sh e setup-kiosk.sh
-- Documentação atualizada com nova versão
-
----
-
-## Version 1.4.3 (Kiosk Fullscreen Service Fix)
-
-### 🔧 Correções do Serviço Kiosk Fullscreen
-
-- **Data da correção**: 2025-07-21
-- **Problema identificado**: Falhas no serviço systemd kiosk-fullscreen com erro "TERM environment variable not set"
+- **Data da correção**: 2025-07-22
+- **Problemas identificados**: Múltiplas falhas no serviço kiosk-fullscreen em produção
 - **Componente afetado**: `scripts/setup-kiosk.sh` - função `setup_kiosk_fullscreen()`
+
+#### Problemas Críticos Encontrados:
+
+1. **KIOSK_APP_URL: unbound variable (linha 186)**:
+
+   - Erro `set -euo pipefail` com variável não definida
+   - Variável referenciada em heredoc quoted
+
+2. **AUTOSTART_EOF: command not found (linha 194)**:
+
+   - Estrutura heredoc mal formada
+   - Código duplicado causando syntax error
+
+3. **TERM environment variable not set**:
+   - Falta de configuração de variáveis no systemd service
 
 #### Correções Implementadas:
 
-1. **Variáveis de Ambiente Systemd**:
+1. **Correção de Variáveis de Ambiente**:
 
-   - Adicionado `Environment=TERM=xterm-256color`
+   - `export KIOSK_APP_URL="${KIOSK_APP_URL:-http://localhost:3000}"` garantindo valor padrão
+   - Adicionado `Environment=TERM=xterm-256color` no systemd service
    - Configurado `Environment=XDG_RUNTIME_DIR=/run/user/1000`
-   - Mantido `Environment=DISPLAY=:0` e outras variáveis essenciais
+
+2. **Correção de Estrutura Heredoc**:
+
+   - Removido aspas simples de `'AUTOSTART_EOF'` para permitir expansão de variáveis
+   - Uso de variável local `$AUTOSTART_URL` para evitar referência a variável não definida
+   - Escape adequado de caracteres especiais (`\$`, `\\`)
+   - Remoção de código duplicado órfão
+
+3. **Melhorias na Limpeza do Chromium**:
+
+   - Adicionado `rm -rf ~/.cache/chromium/Default/Cache/*`
+   - Adicionado `rm -rf ~/.config/chromium/Singleton*`
+   - Baseado nas práticas do projeto tkb-kiosk
+
+4. **Configurações de Segurança Systemd**:
+   - `PrivateTmp=false` para acesso ao X11 socket
+   - `ProtectSystem=false` para permitir acesso ao sistema gráfico
+   - `ExecStartPre` aguarda X11 estar disponível
+
+### 🧪 Ferramentas de Diagnóstico Atualizadas
+
+- **Script de teste atualizado**: `tests/test-kiosk-fullscreen-service.sh`
+  - Diagnósticos específicos para `KIOSK_APP_URL: unbound variable`
+  - Detecção de problemas `AUTOSTART_EOF: command not found`
+  - Comandos de limpeza do cache do Chromium
+  - Validação de sintaxe do script gerado
+
+### 🆕 Outras Atualizações
+
+- **Versão atualizada**: Projeto atualizado para versão 1.4.3
+
+  - Adicionado `Environment=TERM=xterm-256color`
+  - Configurado `Environment=XDG_RUNTIME_DIR=/run/user/1000`
+  - Mantido `Environment=DISPLAY=:0` e outras variáveis essenciais
 
 2. **Configurações de Segurança**:
 

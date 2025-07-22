@@ -1360,16 +1360,19 @@ setup_openbox() {
     # Criar script autostart para Openbox
     kiosk_log_info "Criando script autostart para Openbox..."
     
-    cat > "/tmp/autostart" << 'AUTOSTART_EOF'
+    # Garantir que KIOSK_APP_URL esteja sempre definida
+    local AUTOSTART_URL="${KIOSK_APP_URL:-http://localhost:3000}"
+    
+    cat > "/tmp/autostart" << AUTOSTART_EOF
 #!/bin/sh
 
 # Aguardar X11 estar disponível
-for i in $(seq 1 30); do
+for i in \$(seq 1 30); do
     if xset q >/dev/null 2>&1; then
-        echo "X11 disponível após ${i}s"
+        echo "X11 disponível após \${i}s"
         break
     fi
-    echo "Aguardando X11... (${i}/30s)"
+    echo "Aguardando X11... (\${i}/30s)"
     sleep 1
 done
 
@@ -1386,41 +1389,43 @@ xset s off 2>/dev/null || true
 xset -dpms 2>/dev/null || true
 xset s noblank 2>/dev/null || true
 
-# Limpar crash flags do Chromium
+# Limpar crash flags e cache do Chromium
+rm -rf ~/.cache/chromium/Default/Cache/* 2>/dev/null || true
+rm -rf ~/.config/chromium/Singleton* 2>/dev/null || true
 sed -i 's/"exited_cleanly":false/"exited_cleanly":true/' ~/.config/chromium/Default/Preferences 2>/dev/null || true
 sed -i 's/"exit_type":"Crashed"/"exit_type":"Normal"/' ~/.config/chromium/Default/Preferences 2>/dev/null || true
 
-# Verificar se KIOSK_APP_URL está definida
-if [ -z "${KIOSK_APP_URL:-}" ]; then
+# Verificar se URL está definida
+if [ -z "\${KIOSK_APP_URL:-}" ]; then
     echo "⚠️ KIOSK_APP_URL não definida, usando página padrão"
-    KIOSK_APP_URL="http://localhost:3000"
+    KIOSK_APP_URL="$AUTOSTART_URL"
 fi
 
 # Aguardar um pouco mais para garantir que X11 está estável
 sleep 2
 
 # Iniciar o navegador em modo kiosk com tela cheia
-chromium-browser \
-    --kiosk \
-    --start-fullscreen \
-    --start-maximized \
-    --window-size=1920,1080 \
-    --window-position=0,0 \
-    --incognito \
-    --noerrdialogs \
-    --disable-infobars \
-    --disable-translate \
-    --disable-features=Translate \
-    --disable-background-timer-throttling \
-    --disable-backgrounding-occluded-windows \
-    --disable-renderer-backgrounding \
-    --disable-field-trial-config \
-    --disable-background-networking \
-    --force-device-scale-factor=1 \
-    --disable-dev-shm-usage \
-    --no-sandbox \
-    --disable-gpu-sandbox \
-    "$KIOSK_APP_URL" &
+chromium-browser \\
+    --kiosk \\
+    --start-fullscreen \\
+    --start-maximized \\
+    --window-size=1920,1080 \\
+    --window-position=0,0 \\
+    --incognito \\
+    --noerrdialogs \\
+    --disable-infobars \\
+    --disable-translate \\
+    --disable-features=Translate \\
+    --disable-background-timer-throttling \\
+    --disable-backgrounding-occluded-windows \\
+    --disable-renderer-backgrounding \\
+    --disable-field-trial-config \\
+    --disable-background-networking \\
+    --force-device-scale-factor=1 \\
+    --disable-dev-shm-usage \\
+    --no-sandbox \\
+    --disable-gpu-sandbox \\
+    "$AUTOSTART_URL" &
 
 AUTOSTART_EOF
 
@@ -1448,35 +1453,6 @@ AUTOSTART_EOF
     fi
     
     kiosk_log_success "Openbox configurado com sucesso"
-}
-    --disable-renderer-backgrounding \
-    --disable-field-trial-config \
-    --disable-background-networking \
-    --force-device-scale-factor=1 \
-    --disable-dev-shm-usage \
-    --no-sandbox \
-    --disable-gpu-sandbox \
-    "$KIOSK_APP_URL" &
-
-AUTOSTART_EOF
-
-    # Mover arquivo autostart para local correto
-    sudo cp "/tmp/autostart" "$OPENBOX_CONFIG_DIR/autostart"
-    sudo chmod +x "$OPENBOX_CONFIG_DIR/autostart"
-    
-    # Configurar permissões
-    sudo chmod -R 755 "/home/pi/.config"
-    sudo chown -R pi:pi "/home/pi/.config"
-    
-    # Configurar .xinitrc se necessário
-    if ! grep -q '^exec openbox-session' "$XINITRC_FILE" 2>/dev/null; then
-        echo "exec openbox-session" >> "$XINITRC_FILE"
-        log_info "Linha adicionada ao $XINITRC_FILE: exec openbox-session"
-    else
-        log_info "A linha 'exec openbox-session' já existe em $XINITRC_FILE"
-    fi
-    
-    log_success "Openbox configurado com sucesso"
 }
 
 # =============================================================================
@@ -1530,10 +1506,11 @@ kiosk_start_fullscreen() {
     export DISPLAY="${DISPLAY:-:0}"
     export HOME="${HOME:-/home/pi}"
     export USER="${USER:-pi}"
+    export KIOSK_APP_URL="${KIOSK_APP_URL:-http://localhost:3000}"
     
     clear
     echo "🚀 Iniciando Kiosk System com Chromium em Tela Cheia"
-    echo "Version: $SCRIPT_VERSION"
+    echo "Version: 1.4.3"
     echo ""
     
     kiosk_log_info "=== Iniciando Kiosk System Fullscreen ==="
@@ -1541,6 +1518,7 @@ kiosk_start_fullscreen() {
     kiosk_log_info "DISPLAY: $DISPLAY"
     kiosk_log_info "HOME: $HOME"
     kiosk_log_info "USER: $USER"
+    kiosk_log_info "KIOSK_APP_URL: $KIOSK_APP_URL"
     
     # Aguardar X11 estar disponível
     kiosk_log_info "Aguardando X11 estar disponível..."
@@ -1581,11 +1559,8 @@ kiosk_start_fullscreen() {
     kiosk_log_info "Aguardando 3 segundos antes de iniciar aplicação..."
     sleep 3
     
-    # Verificar se KIOSK_APP_URL está definida
-    if [ -z "${KIOSK_APP_URL:-}" ]; then
-        kiosk_log_warn "KIOSK_APP_URL não definida, usando página padrão"
-        export KIOSK_APP_URL="http://localhost:3000"
-    fi
+    # A variável KIOSK_APP_URL já foi definida no início da função
+    kiosk_log_info "URL da aplicação: $KIOSK_APP_URL"
     
     # Iniciar Chromium diretamente
     kiosk_log_info "Iniciando Chromium em modo kiosk..."

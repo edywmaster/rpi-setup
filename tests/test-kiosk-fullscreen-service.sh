@@ -220,24 +220,37 @@ show_troubleshooting_guide() {
     echo "   - Recarregar systemd: sudo systemctl daemon-reload"
     echo ""
     
-    echo "2. X11 não disponível:"
+    echo "2. KIOSK_APP_URL: unbound variable:"
+    echo "   - Verificar se as variáveis KIOSK estão em /etc/environment"
+    echo "   - Recarregar variáveis: source /etc/environment"
+    echo "   - Verificar script kiosk: cat /opt/kiosk/scripts/kiosk-start-fullscreen.sh"
+    echo ""
+    
+    echo "3. AUTOSTART_EOF: command not found:"
+    echo "   - Problema na estrutura heredoc do script"
+    echo "   - Verificar sintaxe: bash -n /opt/kiosk/scripts/kiosk-start-fullscreen.sh"
+    echo "   - Regenerar script: sudo ./scripts/setup-kiosk.sh"
+    echo ""
+    
+    echo "4. X11 não disponível:"
     echo "   - Verificar se X11 está ativo: sudo systemctl status graphical.target"
     echo "   - Verificar socket X11: ls -la /tmp/.X11-unix/"
     echo "   - Testar DISPLAY: DISPLAY=:0 xset q"
     echo ""
     
-    echo "3. Chromium não inicia:"
+    echo "5. Chromium não inicia:"
     echo "   - Verificar instalação: chromium-browser --version"
+    echo "   - Limpar cache: rm -rf ~/.cache/chromium/Default/Cache/*"
+    echo "   - Remover Singleton: rm -rf ~/.config/chromium/Singleton*"
     echo "   - Testar manualmente: DISPLAY=:0 chromium-browser --kiosk http://google.com"
-    echo "   - Verificar logs: journalctl -u kiosk-fullscreen.service -f"
     echo ""
     
-    echo "4. Permissões:"
+    echo "6. Permissões:"
     echo "   - Verificar dono dos arquivos: ls -la /opt/kiosk/scripts/"
     echo "   - Corrigir se necessário: sudo chown pi:pi /opt/kiosk/scripts/*"
     echo ""
     
-    echo "5. Serviço systemd:"
+    echo "7. Serviço systemd:"
     echo "   - Recarregar configuração: sudo systemctl daemon-reload"
     echo "   - Reiniciar serviço: sudo systemctl restart kiosk-fullscreen.service"
     echo "   - Verificar status: sudo systemctl status kiosk-fullscreen.service"
@@ -248,6 +261,7 @@ show_troubleshooting_guide() {
     echo "   - Status completo: sudo systemctl status kiosk-fullscreen.service"
     echo "   - Parar serviço: sudo systemctl stop kiosk-fullscreen.service"
     echo "   - Desabilitar: sudo systemctl disable kiosk-fullscreen.service"
+    echo "   - Testar script: sudo -u pi /opt/kiosk/scripts/kiosk-start-fullscreen.sh --validate-only"
     echo ""
 }
 
