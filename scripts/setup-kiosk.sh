@@ -1548,19 +1548,19 @@ display_completion_summary() {
     echo
     
     # Use variables already defined in script
-    local prepare_version="1.4.6"  # Latest prepare-system version
-    local app_mode="REDE"
-    local app_url="http://localhost:3000"
-    local app_api_url="https://app.ticketbay.com.br/api/v1"
-    local print_port="50001"
+    #local prepare_version="1.4.6"  # Latest prepare-system version
+    #local app_mode="REDE"
+    #local app_url="http://localhost:3000"
+    #local app_api_url="https://app.ticketbay.com.br/api/v1"
+    #local print_port="50001"
     
     log_info "📋 Resumo da instalação:"
-    log_info "   • Sistema: Kiosk v$prepare_version"
-    log_info "   • Modo: $app_mode"
-    log_info "   • URL da aplicação: $app_url"
-    log_info "   • API URL: $app_api_url"
-    log_info "   • Porta de impressão: $print_port"
-    
+    log_info "   • Kiosk v$SCRIPT_VERSION"
+    log_info "   • Modo: $KIOSK_APP_MODE"
+    log_info "   • URL: $KIOSK_APP_URL"
+    log_info "   • API: $KIOSK_APP_API"
+    log_info "   • Porta de impressão: $KIOSK_PRINT_PORT"
+
     echo
     log_info "📁 Estrutura criada:"
     log_info "   • Base: $KIOSK_BASE_DIR"
