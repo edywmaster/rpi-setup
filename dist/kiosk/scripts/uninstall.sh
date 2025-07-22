@@ -453,7 +453,7 @@ remove_environment_variables() {
         while IFS= read -r line; do
             local should_keep=true
             for var in "${env_vars_to_remove[@]}"; do
-                if [[ "$line" =~ ^export[[:space:]]+${var}= ]]; then
+                if [[ "$line" =~ ^export[[:space:]]+${var}= ]] || [[ "$line" == "export ${var}="* ]]; then
                     should_keep=false
                     ((removed_count++))
                     log_info "⚡ Removendo variável: $var"

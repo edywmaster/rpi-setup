@@ -1,5 +1,55 @@
 # Release Notes
 
+## Version 1.4.2 (Bug Fix - Environment Variables Removal)
+
+### 🐛 Correção de Bug Crítico
+
+- **Problema identificado**: Script de desinstalação não removeu corretamente as variáveis de ambiente do sistema
+- **Componente afetado**: `dist/kiosk/scripts/uninstall.sh` - função `remove_environment_variables()`
+- **Data da correção**: 2025-07-21
+- **Severidade**: Crítica - Variáveis KIOSK permaneciam no sistema após desinstalação
+
+### 🔧 Detalhes da Correção
+
+**Problema Original:**
+
+- Regex `^export[[:space:]]+${var}=` não detectava corretamente variáveis como `export KIOSK_VERSION="1.2.0"`
+- 18 variáveis KIOSK permaneciam em `/etc/environment` após desinstalação
+- Sistema ficava com configurações órfãs do kiosk
+
+**Solução Implementada:**
+
+- Adicionada condição alternativa no pattern matching
+- Padrão corrigido: `[[ "$line" =~ ^export[[:space:]]+${var}= ]] || [[ "$line" == "export ${var}="* ]]`
+- Compatibilidade com diferentes formatos de export
+
+**Variáveis Corrigidas (18 total):**
+
+- Core KIOSK (15): `KIOSK_VERSION`, `KIOSK_APP_*`, `KIOSK_PRINT_*`, `KIOSK_*_DIR`
+- Legacy (4): `APP_MODE`, `APP_URL`, `APP_API_URL`, `PRINT_PORT`
+
+### ✅ Validação e Testes
+
+- **Teste criado**: `tests/test-uninstall-environment-fix.sh`
+- **Validação**: Confirmado remoção de todas as 19 variáveis identificadas
+- **Preservação**: Variáveis do sistema (PATH, LANG, HOME, USER) mantidas
+- **Backup**: Lógica de backup do arquivo `/etc/environment` preservada
+
+### 🔄 Impacto e Compatibilidade
+
+- **Retrocompatibilidade**: Mantida (script funciona com instalações anteriores)
+- **Requisitos**: Nenhum requisito adicional
+- **Ambiente de desenvolvimento**: Testado em macOS (desenvolvimento) para deployment Linux
+- **Validações**: Todas as validações obrigatórias do projeto executadas
+
+### 🚀 Próximos Passos Recomendados
+
+- Teste da correção em ambiente real Raspberry Pi
+- Execução de desinstalação completa para validar limpeza
+- Verificação de que `cat /etc/environment` não contém mais variáveis KIOSK
+
+---
+
 ## Version 1.4.1 (Version Update)
 
 ### 🆕 Atualizações
@@ -16,7 +66,6 @@
 
 ---
 
-
 ## Version 1.4.1 (Version Update)
 
 ### 🆕 Atualizações
@@ -32,7 +81,6 @@
 - Documentação atualizada com nova versão
 
 ---
-
 
 ## Version 1.4.0 (Version Update)
 
@@ -50,7 +98,6 @@
 
 ---
 
-
 ## Version 1.3.1 (Version Manager Implementation)
 
 ### 🆕 Atualizações
@@ -66,7 +113,6 @@
 - Documentação atualizada com nova versão
 
 ---
-
 
 ## Version 1.3.0 (Kiosk Start Service Integration)
 

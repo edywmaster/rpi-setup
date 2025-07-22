@@ -5,7 +5,7 @@
 # =============================================================================
 # Purpose: Initial system update and essential package installation
 # Target: Raspberry Pi OS Lite (Debian 12 "bookworm")
-# Version: 1.4.1
+# Version: 1.4.2
 # Compatibility: Raspberry Pi 4B (portable to other models)
 # 
 # Execution methods:
@@ -78,7 +78,7 @@
 set -eo pipefail  # Exit on error, pipe failures
 
 # Script configuration
-readonly SCRIPT_VERSION="1.4.1"
+readonly SCRIPT_VERSION="1.4.2"
 readonly SCRIPT_NAME="$(basename "${0:-prepare-system.sh}")"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || pwd)"
 readonly LOG_FILE="/var/log/rpi-preparation.log"
