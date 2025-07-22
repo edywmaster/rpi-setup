@@ -342,6 +342,28 @@ setup_kiosk_directories() {
         log_success "✅ Template start.sh disponível"
     fi
 
+    # Download system-info.sh utility
+    log_info "Baixando utilitário system-info.sh..."
+    if command -v wget >/dev/null 2>&1; then
+        wget -q -O "$KIOSK_UTILS_DIR/system-info.sh" \
+             "$DIST_KIOSK_DIR/utils/system-info.sh" 2>/dev/null || {
+            log_warn "⚠️  Não foi possível baixar system-info.sh"
+        }
+    elif command -v curl >/dev/null 2>&1; then
+        curl -s -o "$KIOSK_UTILS_DIR/system-info.sh" \
+             "$DIST_KIOSK_DIR/utils/system-info.sh" 2>/dev/null || {
+            log_warn "⚠️  Não foi possível baixar system-info.sh"
+        }
+    else
+        log_warn "⚠️  wget ou curl não disponível, system-info.sh não será instalado"
+    fi
+
+    # Verify and set permissions for system-info.sh
+    if [[ -f "$KIOSK_UTILS_DIR/system-info.sh" ]]; then
+        chmod +x "$KIOSK_UTILS_DIR/system-info.sh"
+        log_success "✅ Utilitário system-info.sh disponível"
+    fi
+
     # Set proper permissions
     log_info "Configurando permissões dos diretórios..."
     chown -R pi:pi "$KIOSK_BASE_DIR" 2>/dev/null || true
@@ -1387,12 +1409,18 @@ display_completion_summary() {
     log_info "   • Script Python: $KIOSK_UTILS_DIR/printer.py"
     
     echo
-    log_info "�📄 Arquivos importantes:"
+    log_info "📄 Arquivos importantes:"
     log_info "   • Configuração: $KIOSK_CONFIG_FILE"
     log_info "   • Log de instalação: $LOG_FILE"
     log_info "   • Variáveis globais: $GLOBAL_ENV_FILE"
     log_info "   • Log do servidor: /var/log/kiosk-print-server.log"
     log_info "   • Log do printer: /var/log/kiosk-printer.log"
+    log_info "   • Utilitário de info: $KIOSK_UTILS_DIR/system-info.sh"
+    
+    echo
+    log_info "🔧 Utilitários disponíveis:"
+    log_info "   • Informações do sistema: $KIOSK_UTILS_DIR/system-info.sh"
+    log_info "   • Para verificar status: sudo $KIOSK_UTILS_DIR/system-info.sh"
     
     echo
     log_info "🔄 Próximos passos:"

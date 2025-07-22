@@ -8,6 +8,9 @@ Documentação para uso em ambientes de produção:
 
 - **[DEPLOYMENT.md](production/DEPLOYMENT.md)** - Guia completo de implantação em larga escala
 - **[PREPARE-SYSTEM.md](production/PREPARE-SYSTEM.md)** - Manual detalhado do script principal
+- **[SYSTEM-INFO.md](production/SYSTEM-INFO.md)** - Guia de uso do utilitário system-info.sh
+- **[PRINT-SERVER.md](production/PRINT-SERVER.md)** - Documentação do servidor de impressão
+- **[etc-environment-example.txt](production/etc-environment-example.txt)** - Exemplo de configuração /etc/environment
 
 ### 🔧 Desenvolvimento (`docs/development/`)
 
@@ -15,6 +18,8 @@ Documentação técnica e de desenvolvimento:
 
 - **[README-DETAILED.md](development/README-DETAILED.md)** - README original com todas as informações técnicas
 - **[RELEASE-NOTES.md](development/RELEASE-NOTES.md)** - Histórico de versões e correções de bugs
+- **[SYSTEM-INFO-ENVIRONMENT-INTEGRATION.md](development/SYSTEM-INFO-ENVIRONMENT-INTEGRATION.md)** - Detalhes técnicos da integração com /etc/environment
+- **[SYSTEM-INFO-PRODUCTION-SUMMARY.md](development/SYSTEM-INFO-PRODUCTION-SUMMARY.md)** - Resumo completo da implementação do system-info.sh
 
 ### 🧠 Instruções para IA (`.github/`)
 

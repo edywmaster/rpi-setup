@@ -1,0 +1,29 @@
+# Exemplo de /etc/environment após setup do kiosk
+# Este arquivo mostra as variáveis que são adicionadas pelo script setup-kiosk.sh
+
+# Variáveis do sistema kiosk
+export KIOSK_VERSION="1.0.0"
+export KIOSK_APP_MODE="REDE"
+export KIOSK_APP_URL="http://localhost:3000"
+export KIOSK_APP_API="https://app.ticketbay.com.br/api/v1"
+
+# Configurações do servidor de impressão
+export KIOSK_PRINT_PORT="50001"
+export KIOSK_PRINT_HOST="localhost"
+export KIOSK_PRINT_URL="http://localhost:50001"
+export KIOSK_PRINT_SERVER="/opt/kiosk/server/print.js"
+export KIOSK_PRINT_SCRIPT="/opt/kiosk/utils/print.py"
+export KIOSK_PRINT_TEMP="/opt/kiosk/tmp"
+
+# Diretórios do sistema kiosk
+export KIOSK_BASE_DIR="/opt/kiosk"
+export KIOSK_SCRIPTS_DIR="/opt/kiosk/scripts"
+export KIOSK_SERVER_DIR="/opt/kiosk/server"
+export KIOSK_UTILS_DIR="/opt/kiosk/utils"
+export KIOSK_TEMPLATES_DIR="/opt/kiosk/templates"
+export KIOSK_TEMP_DIR="/opt/kiosk/tmp"
+
+# Configurações de rede e display
+export KIOSK_DISPLAY=":0"
+export KIOSK_USER="pi"
+export KIOSK_GROUP="pi"

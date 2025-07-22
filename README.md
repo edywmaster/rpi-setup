@@ -110,6 +110,29 @@ curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/dist/kios
 - Logs e arquivos de estado do kiosk
 - **Preserva**: Sistema base (Node.js, PM2, CUPS)
 
+## 🔍 Utilitários de Sistema
+
+### Informações do Sistema
+
+Para verificar o status completo do sistema e configurações instaladas:
+
+```bash
+# Executar localmente
+./utils/system-info.sh
+
+# Ou via download direto
+curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/utils/system-info.sh | bash
+```
+
+**Informações exibidas:**
+
+- Status do hardware (CPU, memória, disco, temperatura)
+- Status dos scripts de preparação e kiosk
+- Serviços systemd relacionados
+- Configurações de rede e conectividade
+- Variáveis de ambiente do sistema
+- Logs e arquivos de estado
+
 ## 🎯 Compatibilidade
 
 - **Sistema**: Raspberry Pi OS Lite (Debian 12 "bookworm")
