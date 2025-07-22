@@ -1,5 +1,39 @@
 # Release Notes
 
+## Version 1.4.1 (Version Update)
+
+### 🆕 Atualizações
+
+- **Versão atualizada**: Projeto atualizado para versão 1.4.1
+- **Data de atualização**: 2025-07-21
+- **Gerenciamento centralizado**: Versões agora gerenciadas via scripts/version-manager.sh
+
+### 🔧 Alterações Técnicas
+
+- Atualização automática de versões em todos os componentes
+- Sincronização de versões entre prepare-system.sh e setup-kiosk.sh
+- Documentação atualizada com nova versão
+
+---
+
+
+## Version 1.4.1 (Version Update)
+
+### 🆕 Atualizações
+
+- **Versão atualizada**: Projeto atualizado para versão 1.4.1
+- **Data de atualização**: 2025-07-21
+- **Gerenciamento centralizado**: Versões agora gerenciadas via scripts/version-manager.sh
+
+### 🔧 Alterações Técnicas
+
+- Atualização automática de versões em todos os componentes
+- Sincronização de versões entre prepare-system.sh e setup-kiosk.sh
+- Documentação atualizada com nova versão
+
+---
+
+
 ## Version 1.4.0 (Version Update)
 
 ### 🆕 Atualizações

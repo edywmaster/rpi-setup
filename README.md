@@ -2,7 +2,7 @@
 
 Automação completa para Raspberry Pi OS Lite - Configure múltiplos dispositivos com um único comando.
 
-> **📋 Versão Atual**: v1.3.1 | **Última Atualização**: 2025-07-21 | **🆕 Sistema de Versionamento Centralizado**
+> **📋 Versão Atual**: v1.4.0 | **Última Atualização**: 2025-07-21 | **🆕 Sistema de Validação e Versionamento Automatizado**
 
 ## ⚡ Execução Rápida
 
@@ -146,8 +146,55 @@ curl -fsSL https://raw.githubusercontent.com/edywmaster/rpi-setup/main/utils/sys
 - **[Guia de Produção](docs/production/DEPLOYMENT.md)** - Implantação em larga escala
 - **[Manual Completo](docs/production/PREPARE-SYSTEM.md)** - Documentação detalhada
 - **[Desenvolvimento](docs/development/)** - Informações técnicas e correções
-- **[Gerenciamento de Versões](docs/development/VERSION-MANAGEMENT.md)** - 🆕 Sistema centralizado de versionamento
+- **[Gerenciamento de Versões](docs/development/VERSION-MANAGEMENT.md)** - Sistema centralizado de versionamento
+- **[Validação de Estrutura](docs/development/VALIDATION-VERSIONING-IMPLEMENTATION.md)** - 🆕 Sistema de validação automatizada
+
+## 🔧 Ferramentas de Validação e Qualidade
+
+O projeto inclui um sistema completo de validação automatizada:
+
+### Validação Completa
+
+```bash
+# Validação completa do projeto
+./tests/validate-all.sh
+
+# Validação antes de mudanças
+./tests/validate-all.sh --pre-change
+
+# Validação após mudanças
+./tests/validate-all.sh --post-change
+```
+
+### Gerenciamento de Versão
+
+```bash
+# Verificar versão atual
+./scripts/version-manager.sh --current
+
+# Atualizar versão
+./scripts/version-manager.sh --update X.Y.Z
+
+# Validar consistência de versões
+./scripts/version-manager.sh --validate
+```
+
+### Validações Específicas
+
+```bash
+./tests/validate-structure.sh           # Estrutura do projeto
+./tests/validate-docs-structure.sh      # Estrutura de documentação
+./tests/validate-copilot-integration.sh # Integração com IA
+```
+
+### Hook de Pré-Commit
+
+```bash
+# Instalar validação automática antes de commits
+cp scripts/pre-commit.sh .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
 
 ---
 
-**Versão atual**: v1.3.1 | **Última Atualização**: 2025-07-21 | **Repositório**: [edywmaster/rpi-setup](https://github.com/edywmaster/rpi-setup)
+**Versão atual**: v1.4.0 | **Última Atualização**: 2025-07-21 | **Repositório**: [edywmaster/rpi-setup](https://github.com/edywmaster/rpi-setup)
