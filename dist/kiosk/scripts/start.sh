@@ -36,10 +36,28 @@ clear
 echo "🚀 Iniciando o Kiosk System"
 sleep 2
 
-echo "📂 Carregando variáveis do sistema..."
-load_kiosk_config
 
-sleep 1
-show_kiosk_vars
 
-echo "✨ Sistema inicializado com sucesso!"
+kiosk_start() {
+  echo ""
+  echo "🚀 Iniciando o Kiosk System"
+  show_kiosk_vars
+  sleep 15
+  startx > /dev/null 2>&1
+  bash "$HOME/.config/openbox/autostart"
+}
+
+ssh_start() {
+  echo ""
+  echo "Kiosk System"
+  load_kiosk_config
+  exit 0
+}
+
+
+# Verificar se o script está sendo executado via SSH
+if [ -n "$SSH_CONNECTION" ]; then
+  ssh_start
+else
+  kiosk_start
+fi
