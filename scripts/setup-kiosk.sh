@@ -1264,14 +1264,14 @@ setup_openbox_environment() {
     log_info "Configurando ambiente gráfico Openbox..."
 
     # Install Openbox
-    log_info "Instalando Openbox..."
-    if ! dpkg -l | grep -q "^ii.*openbox"; then
-        apt-get update
-        apt-get install -y openbox unclutter xorg xserver-xorg-legacy x11-xserver-utils
-        log_success "✅ Openbox instalado"
-    else
-        log_info "ℹ️  Openbox já está instalado"
-    fi
+    #log_info "Instalando Openbox..."
+    #if ! dpkg -l | grep -q "^ii.*openbox"; then
+    #    apt-get update
+    #    apt-get install -y openbox unclutter xorg xserver-xorg-legacy x11-xserver-utils
+    #    log_success "✅ Openbox instalado"
+    #else
+    #    log_info "ℹ️  Openbox já está instalado"
+    #fi
 
     # Create necessary directories
     log_info "Criando diretórios necessários..."

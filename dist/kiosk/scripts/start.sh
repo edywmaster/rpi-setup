@@ -42,7 +42,7 @@ kiosk_start() {
   echo ""
   echo "🚀 Iniciando o Kiosk System"
   show_kiosk_vars
-  sleep 15
+  sleep 5
   startx > /dev/null 2>&1
   bash "$HOME/.config/openbox/autostart"
 }
